@@ -1,0 +1,33 @@
+ 
+/* CSS Files Content */
+
+/* src/styles/components/LoadingSpinner.css */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  min-height: 200px;
+}
+
+.spinner-icon {
+  animation: spin 1s linear infinite;
+  color: var(--primary-color);
+}
+
+.spinner-small .spinner-icon { width: 16px; height: 16px; }
+.spinner-medium .spinner-icon { width: 24px; height: 24px; }
+.spinner-large .spinner-icon { width: 32px; height: 32px; }
+
+.spinner-message {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
