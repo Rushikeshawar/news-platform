@@ -1,136 +1,167 @@
- 
-/* src/styles/components/Header.css */
-.header {
+/* Header Component - Fixed */
+header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  background: var(--background-color);
+  background: white;
   border-bottom: 1px solid var(--border-color);
   z-index: 1000;
-  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
 }
 
-.header-container {
+header > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 70px;
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 2rem;
+  gap: 2rem;
 }
 
-.header-logo .logo-text {
+/* Logo */
+header a[href="/"] {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-color);
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.desktop-nav {
+/* Navigation Links */
+nav {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
+  align-items: center;
 }
 
-.nav-link {
+nav a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   color: var(--text-secondary);
   text-decoration: none;
-  border-radius: var(--border-radius);
+  border-radius: 8px;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.nav-link:hover,
-.nav-link.active {
+nav a:hover,
+nav a.active {
   color: var(--primary-color);
   background-color: var(--surface-color);
 }
 
-.search-form {
+/* Search Form */
+header form {
   flex: 1;
   max-width: 400px;
-  margin: 0 2rem;
-}
-
-.search-input-container {
   position: relative;
 }
 
-.search-icon {
+header form > div {
+  position: relative;
+  width: 100%;
+}
+
+header form svg {
   position: absolute;
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
-.search-input {
+header form input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
+  border-radius: 8px;
   background: var(--surface-color);
   color: var(--text-primary);
+  font-size: 0.95rem;
 }
 
-.header-actions {
+header form input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: white;
+}
+
+/* Right Side Actions */
+header > div > div:last-child {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.theme-toggle {
+/* Theme Toggle Button */
+header button[title*="theme"],
+header button[aria-label*="theme"] {
   padding: 0.5rem;
   border: none;
   background: none;
-  color: var(--text-secondary);
   cursor: pointer;
-  border-radius: var(--border-radius);
-}
-
-.user-menu {
+  border-radius: 8px;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
 }
 
-.auth-links {
-  display: flex;
-  gap: 1rem;
+header button[title*="theme"]:hover {
+  background: var(--surface-color);
 }
 
-.auth-link {
+/* Auth Links */
+header a[href="/login"],
+header a[href="/register"] {
   padding: 0.5rem 1rem;
+  border-radius: 8px;
   text-decoration: none;
-  color: var(--text-secondary);
-  border-radius: var(--border-radius);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.auth-link.register {
+header a[href="/login"] {
+  color: var(--text-secondary);
+}
+
+header a[href="/login"]:hover {
+  background: var(--surface-color);
+}
+
+header a[href="/register"] {
   background: var(--primary-color);
   color: white;
 }
 
-.mobile-menu-toggle {
-  display: none;
-  border: none;
-  background: none;
-  cursor: pointer;
+header a[href="/register"]:hover {
+  background: var(--primary-dark);
 }
 
-@media (max-width: 768px) {
-  .desktop-nav,
-  .search-form {
+/* Responsive */
+@media (max-width: 1024px) {
+  nav {
     display: none;
   }
   
-  .mobile-menu-toggle {
-    display: block;
+  header form {
+    max-width: 300px;
   }
 }
 
-/* Additional component styles would go in their respective files */
+@media (max-width: 768px) {
+  header > div {
+    padding: 0 1rem;
+    gap: 1rem;
+  }
+  
+  header form {
+    display: none;
+  }
+}

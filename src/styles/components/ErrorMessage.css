@@ -1,51 +1,113 @@
- 
-/* src/styles/components/ErrorMessage.css */
+/* Error Message Component - Complete */
 .error-message {
   display: flex;
   justify-content: center;
-  padding: 2rem;
+  padding: var(--space-8);
+  animation: slideInUp var(--transition-base);
 }
 
 .error-content {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: var(--surface-color);
-  border: 1px solid var(--error-color);
-  border-radius: var(--border-radius);
-  max-width: 500px;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--background-color);
+  border: 2px solid var(--error-color);
+  border-left: 6px solid var(--error-color);
+  border-radius: var(--radius-xl);
+  max-width: 600px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
 }
 
 .error-icon {
   color: var(--error-color);
   flex-shrink: 0;
+  margin-top: var(--space-1);
+}
+
+.error-text {
+  flex: 1;
 }
 
 .error-text h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 var(--space-2) 0;
   color: var(--error-color);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
 }
 
 .error-text p {
   margin: 0;
   color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
 }
 
 .retry-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--primary-color);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  background: var(--error-color);
   color: white;
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition-fast);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--space-4);
+  align-self: flex-start;
 }
 
 .retry-btn:hover {
-  background: var(--primary-dark);
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
+.retry-btn:active {
+  transform: translateY(0);
+}
+
+/* Error Variations */
+.error-content.warning {
+  border-color: var(--warning-color);
+  border-left-color: var(--warning-color);
+}
+
+.error-content.warning .error-icon {
+  color: var(--warning-color);
+}
+
+.error-content.warning .error-text h3 {
+  color: var(--warning-color);
+}
+
+.error-content.info {
+  border-color: var(--info-color);
+  border-left-color: var(--info-color);
+}
+
+.error-content.info .error-icon {
+  color: var(--info-color);
+}
+
+.error-content.info .error-text h3 {
+  color: var(--info-color);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .error-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .retry-btn {
+    align-self: center;
+    width: 100%;
+    justify-content: center;
+  }
+}

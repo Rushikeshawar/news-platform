@@ -1,12 +1,48 @@
+/* App.css - Main Layout */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 .App {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--surface-color);
 }
 
 .main-content {
   flex: 1;
-  padding-top: 80px;
+  padding-top: 70px; /* Header height */
+  width: 100%;
 }
 
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+section {
+  position: relative;
+  z-index: 1;
+}
+
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+}

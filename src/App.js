@@ -1,5 +1,3 @@
-
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
@@ -14,6 +12,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 // Pages
 import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
+import ArticleDetailsPage from './pages/ArticleDetailsPage';
 import AiMlPage from './pages/AiMlPage';
 import TimeSaverPage from './pages/TimeSaverPage';
 import ProfilePage from './pages/ProfilePage';
@@ -29,6 +28,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });
@@ -43,14 +43,25 @@ function App() {
               <Header />
               <main className="main-content">
                 <Routes>
+                  {/* Public Routes */}
                   <Route path="/" element={<HomePage />} />
+                  
+                  {/* Articles */}
                   <Route path="/articles" element={<ArticlesPage />} />
-                  <Route path="/articles/:id" element={<ArticlesPage />} />
+                  <Route path="/articles/:id" element={<ArticleDetailsPage />} />
+                  
+                  {/* AI/ML */}
                   <Route path="/ai-ml" element={<AiMlPage />} />
                   <Route path="/ai-ml/:id" element={<AiMlPage />} />
+                  
+                  {/* Time Saver */}
                   <Route path="/time-saver" element={<TimeSaverPage />} />
+                  
+                  {/* Authentication */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
+                  
+                  {/* Protected Routes */}
                   <Route 
                     path="/profile" 
                     element={
@@ -59,6 +70,8 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  
+                  {/* 404 Not Found */}
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </main>
@@ -72,4 +85,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,0 +1,22 @@
+/* Main CSS Entry Point - Import all styles */
+
+/* Import design tokens and global styles first */
+@import './variables.css';
+@import './global.css';
+
+/* Component styles */
+@import './components/AiMlCard.css';
+@import './components/ArticleCard.css';
+@import './components/CategoryStats.css';
+@import './components/ErrorMessage.css';
+@import './components/LoadingSpinner.css';
+@import './components/Pagination.css';
+@import './components/TimeSaverCard.css';
+
+/* Page styles */
+@import './pages/HomePage.css';
+@import './pages/ArticlesPage.css';
+@import './pages/AiMlPage.css';
+@import './pages/TimeSaverPage.css';
+@import './pages/LoginPage.css';
+@import './pages/ProfilePage.css';
