@@ -63,7 +63,7 @@ const HomePage = () => {
         <div className="hero-container">
           <div className="hero-content">
             <h1 className="hero-title">
-              Stay Informed with <span className="highlight">NewsHub</span>
+              Stay Informed with <span className="highlight">Lines</span>
             </h1>
             <p className="hero-description">
               Discover the latest articles, AI/ML innovations, and time-saving content 

@@ -70,7 +70,7 @@ const Header = () => {
         {/* Logo */}
         <div>
           <Link to="/" style={{ textDecoration: 'none', color: '#3182ce', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            NewsHub
+            Lines
           </Link>
         </div>
 

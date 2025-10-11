@@ -1,7 +1,6 @@
- 
-// src/components/articles/SearchForm.js
 import React, { useState } from 'react';
 import { Search, Filter } from 'lucide-react';
+import '../../styles/components/SearchForm.css';
 
 const SearchForm = ({ onSearch, initialValues = {}, categories = [] }) => {
   const [formData, setFormData] = useState({

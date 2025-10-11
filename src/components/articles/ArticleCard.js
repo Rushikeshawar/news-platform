@@ -1,4 +1,5 @@
- 
+
+// src/components/articles/ArticleCard.js
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -18,13 +19,16 @@ const ArticleCard = ({ article, viewMode = 'grid' }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-      Math.ceil((date - new Date()) / (1000 * 60 * 60 * 24)),
-      'day'
-    );
+    const now = new Date();
+    const diffTime = date - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    return rtf.format(diffDays, 'day');
   };
 
   const formatViewCount = (count) => {
+    if (!count) return '0';
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M`;
     }
@@ -46,7 +50,6 @@ const ArticleCard = ({ article, viewMode = 'grid' }) => {
           url: window.location.origin + `/articles/${article.id}`
         });
       } else {
-        // Fallback: copy to clipboard
         await navigator.clipboard.writeText(
           window.location.origin + `/articles/${article.id}`
         );
@@ -66,7 +69,6 @@ const ArticleCard = ({ article, viewMode = 'grid' }) => {
       return;
     }
     
-    // Implement favorite functionality
     console.log('Toggle favorite for article:', article.id);
   };
 
@@ -126,7 +128,7 @@ const ArticleCard = ({ article, viewMode = 'grid' }) => {
               <span>{formatViewCount(article.viewCount || 0)}</span>
             </div>
             
-            {article.shareCount && (
+            {article.shareCount > 0 && (
               <div className="stat-item">
                 <Share2 size={14} />
                 <span>{formatViewCount(article.shareCount)}</span>

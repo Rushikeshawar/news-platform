@@ -22,7 +22,7 @@ const Footer = () => {
           marginBottom: '2rem'
         }}>
           <div>
-            <h3 style={{ marginBottom: '1rem' }}>NewsHub</h3>
+            <h3 style={{ marginBottom: '1rem' }}>Lines</h3>
             <p>Your gateway to staying informed</p>
           </div>
           <div>

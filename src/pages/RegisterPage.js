@@ -87,7 +87,7 @@ const RegisterPage = () => {
           <div className="register-header">
             <h1 className="register-title">
               <UserPlus size={24} />
-              Join NewsHub
+              Join Lines
             </h1>
             <p className="register-subtitle">Create your account to get started</p>
           </div>

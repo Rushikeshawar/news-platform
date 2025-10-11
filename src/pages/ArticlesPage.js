@@ -1,7 +1,6 @@
- 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { articlesService } from '../services/articlesService';
 import ArticleCard from '../components/articles/ArticleCard';
 import SearchForm from '../components/articles/SearchForm';
@@ -52,7 +51,7 @@ const ArticlesPage = () => {
   useEffect(() => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value && value !== '' && !(key === 'page' && value === 1)) {
+      if (value && value !== '' && !(key === 'page' && value === 1) && !(key === 'limit')) {
         params.set(key, value.toString());
       }
     });
@@ -209,13 +208,17 @@ const ArticlesPage = () => {
                 </h3>
                 <div className="trending-list">
                   {trendingArticles.map((article) => (
-                    <div key={article.id} className="trending-item">
+                    <Link 
+                      key={article.id} 
+                      to={`/articles/${article.id}`}
+                      className="trending-item"
+                    >
                       <h4 className="trending-title">{article.title}</h4>
                       <div className="trending-meta">
                         <span className="view-count">{article.viewCount} views</span>
                         <span className="category">{article.category}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -231,7 +234,7 @@ const ArticlesPage = () => {
                   <span>Loading...</span>
                 ) : (
                   <span>
-                    {pagination.totalCount} articles found
+                    {pagination.totalCount || 0} articles found
                     {filters.search && ` for "${filters.search}"`}
                   </span>
                 )}
