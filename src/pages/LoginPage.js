@@ -197,8 +197,8 @@ const LoginPage = () => {
           <h3>Demo Credentials</h3>
           <p>For testing purposes, you can use:</p>
           <div className="demo-credentials">
-            <p><strong>Email:</strong> user@example.com</p>
-            <p><strong>Password:</strong> securePassword123</p>
+            <p><strong>Email:</strong> rushikeshaware0009@gmail.com</p>
+            <p><strong>Password:</strong> Rushi@123</p>
           </div>
         </div>
       </div>
