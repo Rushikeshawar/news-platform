@@ -34,7 +34,7 @@ export const articlesService = {
 
   // Search articles
   searchArticles: async (params = {}) => {
-    const response = await api.get('/search', { params });
+    const response = await api.get('/articles', { params });
     return response.data;
   }
 };

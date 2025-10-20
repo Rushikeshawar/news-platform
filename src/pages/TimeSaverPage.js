@@ -1,10 +1,8 @@
- 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { useSearchParams } from 'react-router-dom';
 import { timeSaverService } from '../services/timeSaverService';
 import TimeSaverCard from '../components/time-saver/TimeSaverCard';
-import CategoryStats from '../components/time-saver/CategoryStats';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Pagination from '../components/common/Pagination';
@@ -35,12 +33,12 @@ const TimeSaverPage = () => {
     () => timeSaverService.getContent(filters),
     {
       keepPreviousData: true,
-      staleTime: 1 * 60 * 1000 // 1 minute cache
+      staleTime: 60 * 1000 // 1 minute cache
     }
   );
 
   // Fetch stats
-  const { data: statsData, isLoading: statsLoading } = useQuery(
+  const { data: statsData } = useQuery(
     'timesaver-stats',
     () => timeSaverService.getStats(),
     { 
@@ -49,7 +47,7 @@ const TimeSaverPage = () => {
     }
   );
 
-  // Update URL when filters change
+  // Sync filters to URL
   useEffect(() => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -64,7 +62,7 @@ const TimeSaverPage = () => {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      page: 1 // Reset page when filters change
+      page: 1 // reset to first page
     }));
   };
 
@@ -107,7 +105,7 @@ const TimeSaverPage = () => {
       <div className="timesaver-page">
         <div className="container">
           <ErrorMessage 
-            message="Failed to load time saver content" 
+            message="Failed to load Time Saver content. Please try again."
             onRetry={refetch}
           />
         </div>
@@ -118,31 +116,29 @@ const TimeSaverPage = () => {
   return (
     <div className="timesaver-page">
       <div className="container">
+        
         {/* Page Header */}
-        <div className="page-header">
+        <header className="page-header">
           <div className="header-content">
             <h1 className="page-title">
               <Clock size={32} />
-              Time Saver Content
+              <span>Time Saver Content</span>
             </h1>
             <p className="page-description">
-              Quick reads, breaking news, and curated content to keep you informed 
-              without the time commitment.
+              Stay updated quickly with short reads, critical updates, and trending insights 
+              designed for your busy schedule.
             </p>
           </div>
-        </div>
-
-        {/* Stats Dashboard */}
-        <CategoryStats stats={stats} loading={statsLoading} />
+        </header>
 
         <div className="timesaver-layout">
           {/* Sidebar */}
           <aside className="timesaver-sidebar">
             {/* Content Groups */}
-            <div className="sidebar-section">
+            <section className="sidebar-section">
               <h3 className="sidebar-title">
                 <Filter size={18} />
-                Content Groups
+                <span>Content Groups</span>
               </h3>
               <div className="content-groups">
                 {contentGroups.map(({ id, label, icon: Icon }) => (
@@ -153,17 +149,20 @@ const TimeSaverPage = () => {
                   >
                     <Icon size={16} />
                     <span>{label}</span>
-                    {stats[`${id}Count`] && (
+                    {stats[`${id}Count`] > 0 && (
                       <span className="count">{stats[`${id}Count`]}</span>
                     )}
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Categories */}
-            <div className="sidebar-section">
-              <h3 className="sidebar-title">Categories</h3>
+            <section className="sidebar-section">
+              <h3 className="sidebar-title">
+                <Filter size={18} />
+                <span>Categories</span>
+              </h3>
               <div className="categories-list">
                 <button
                   className={`category-btn ${!filters.category ? 'active' : ''}`}
@@ -181,11 +180,14 @@ const TimeSaverPage = () => {
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Quick Stats */}
-            <div className="sidebar-section">
-              <h3 className="sidebar-title">Quick Stats</h3>
+            <section className="sidebar-section quick-stats-section">
+              <h3 className="sidebar-title">
+                <TrendingUp size={18} />
+                <span>Quick Stats</span>
+              </h3>
               <div className="quick-stats">
                 <div className="stat-item">
                   <span className="stat-label">Stories Today</span>
@@ -200,11 +202,12 @@ const TimeSaverPage = () => {
                   <span className="stat-value">{stats.breakingCount || 0}</span>
                 </div>
               </div>
-            </div>
+            </section>
           </aside>
 
           {/* Main Content */}
           <main className="timesaver-main">
+            
             {/* Active Filters */}
             {(filters.category || filters.contentGroup) && (
               <div className="active-filters">
@@ -230,9 +233,7 @@ const TimeSaverPage = () => {
                 {isLoading ? (
                   <span>Loading...</span>
                 ) : (
-                  <span>
-                    {pagination.totalCount || 0} items found
-                  </span>
+                  <span>{pagination.totalCount || 0} items found</span>
                 )}
               </div>
               <div className="sort-controls">
@@ -278,9 +279,9 @@ const TimeSaverPage = () => {
               <div className="no-results">
                 <Clock size={48} className="no-results-icon" />
                 <h3>No content found</h3>
-                <p>Try adjusting your filters or check back later for new content.</p>
+                <p>Try adjusting your filters or check back later for new updates.</p>
                 <button onClick={clearFilters} className="clear-filters-btn">
-                  Clear Filters
+                  Reset Filters
                 </button>
               </div>
             )}

@@ -61,4 +61,3 @@ const AiMlDetails = () => {
 };
 
 export default AiMlDetails;
-

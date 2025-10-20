@@ -1,136 +1,190 @@
- 
 // src/components/profile/ReadingHistory.js
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
-import { userService } from '../../services/userService';
-import { 
-  Clock, 
-  Eye, 
-  Calendar,
-  BookOpen,
-  TrendingUp
-} from 'lucide-react';
-import LoadingSpinner from '../common/LoadingSpinner';
-import Pagination from '../common/Pagination';
+import { Link } from 'react-router-dom';
+import { Clock, Calendar, Search, BookOpen } from 'lucide-react';
+import '../../styles/components/ReadingHistory.css';
 
-const ReadingHistory = () => {
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 10,
-    sortBy: 'updatedAt',
-    order: 'desc'
+const ReadingHistory = ({ historyData }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const history = historyData?.history || [];
+
+  // Filter history based on search
+  const filteredHistory = history.filter(item => {
+    if (searchQuery === '') return true;
+    
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      item.article?.title?.toLowerCase().includes(searchLower) ||
+      item.article?.headline?.toLowerCase().includes(searchLower) ||
+      item.article?.category?.toLowerCase().includes(searchLower)
+    );
   });
 
-  const { data: historyData, isLoading } = useQuery(
-    ['reading-history', filters],
-    () => userService.getReadingHistory(filters),
-    { keepPreviousData: true }
-  );
-
-  const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return 'Yesterday';
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
   };
 
-  const formatReadTime = (seconds) => {
-    if (!seconds) return '0m';
+  const formatReadingTime = (seconds) => {
+    if (!seconds) return 'N/A';
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 1) return '< 1 min';
+    if (minutes < 60) return `${minutes} min`;
     const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
   };
 
-  const formatProgress = (progress) => {
-    return Math.round((progress || 0) * 100);
-  };
-
-  if (isLoading) {
-    return <LoadingSpinner message="Loading reading history..." />;
-  }
-
-  const history = historyData?.data?.history || [];
-  const pagination = historyData?.data?.pagination || {};
+  // Group history by date
+  const groupedHistory = filteredHistory.reduce((groups, item) => {
+    const date = new Date(item.lastReadAt || item.createdAt);
+    const dateKey = date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(item);
+    return groups;
+  }, {});
 
   return (
     <div className="reading-history">
+      {/* Header */}
       <div className="history-header">
-        <h2>
-          <BookOpen size={24} />
-          Reading History
-        </h2>
-        <p>Track your reading progress and revisit articles</p>
-      </div>
+        <div className="header-info">
+          <h2 className="history-title">
+            <Clock size={24} />
+            Reading History
+          </h2>
+          <p className="history-count">
+            {history.length} article{history.length !== 1 ? 's' : ''} read
+          </p>
+        </div>
 
-      {/* Sort Controls */}
-      <div className="history-controls">
-        <select
-          value={`${filters.sortBy}-${filters.order}`}
-          onChange={(e) => {
-            const [sortBy, order] = e.target.value.split('-');
-            setFilters(prev => ({ ...prev, sortBy, order, page: 1 }));
-          }}
-          className="sort-select"
-        >
-          <option value="updatedAt-desc">Recently Read</option>
-          <option value="timeSpent-desc">Most Time Spent</option>
-          <option value="readProgress-desc">Most Progress</option>
-          <option value="createdAt-desc">Recently Added</option>
-        </select>
-      </div>
-
-      {/* History List */}
-      {history.length > 0 ? (
-        <>
-          <div className="history-list">
-            {history.map((item) => (
-              <div key={item.id} className="history-item">
-                <div className="article-info">
-                  <h3 className="article-title">{item.article?.title}</h3>
-                  <p className="article-category">{item.article?.category}</p>
-                </div>
-                
-                <div className="reading-stats">
-                  <div className="stat">
-                    <Clock size={14} />
-                    <span>{formatReadTime(item.timeSpent)}</span>
-                  </div>
-                  
-                  <div className="stat">
-                    <TrendingUp size={14} />
-                    <span>{formatProgress(item.readProgress)}%</span>
-                  </div>
-                  
-                  <div className="stat">
-                    <Calendar size={14} />
-                    <span>{new Date(item.updatedAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill"
-                    style={{ width: `${formatProgress(item.readProgress)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {pagination.totalPages > 1 && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-              showInfo={true}
-              totalItems={pagination.totalCount}
+        {history.length > 0 && (
+          <div className="search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search history..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
             />
-          )}
-        </>
-      ) : (
-        <div className="no-history">
-          <BookOpen size={48} />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      {history.length === 0 ? (
+        <div className="empty-history">
+          <BookOpen size={64} strokeWidth={1} />
           <h3>No reading history yet</h3>
-          <p>Start reading articles to track your progress here</p>
+          <p>Articles you read will appear here</p>
+          <Link to="/articles" className="browse-btn">
+            Start Reading
+          </Link>
+        </div>
+      ) : filteredHistory.length === 0 ? (
+        <div className="empty-history">
+          <Search size={64} strokeWidth={1} />
+          <h3>No results found</h3>
+          <p>Try a different search term</p>
+          <button 
+            onClick={() => setSearchQuery('')}
+            className="reset-btn"
+          >
+            Clear Search
+          </button>
+        </div>
+      ) : (
+        <div className="history-timeline">
+          {Object.entries(groupedHistory).map(([date, items]) => (
+            <div key={date} className="history-group">
+              <div className="group-date">
+                <Calendar size={16} />
+                <span>{date}</span>
+              </div>
+
+              <div className="history-items">
+                {items.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/articles/${item.articleId}`}
+                    className="history-item"
+                  >
+                    {/* Article Image */}
+                    <div className="history-image">
+                      {item.article?.featuredImage || item.article?.imageUrl ? (
+                        <img 
+                          src={item.article.featuredImage || item.article.imageUrl} 
+                          alt={item.article.title || item.article.headline}
+                        />
+                      ) : (
+                        <div className="history-image-placeholder">
+                          <BookOpen size={24} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Article Info */}
+                    <div className="history-content">
+                      <h4 className="history-article-title">
+                        {item.article?.title || item.article?.headline}
+                      </h4>
+                      
+                      <div className="history-meta">
+                        <span className="history-category">
+                          {item.article?.categoryDisplayName || item.article?.category || 'Uncategorized'}
+                        </span>
+                        <span className="history-time">
+                          <Clock size={14} />
+                          {formatReadingTime(item.timeSpent)}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {item.progress !== undefined && item.progress > 0 && (
+                        <div className="history-progress">
+                          <div className="progress-bar">
+                            <div 
+                              className="progress-fill"
+                              style={{ width: `${item.progress}%` }}
+                            />
+                          </div>
+                          <span className="progress-text">
+                            {item.progress}% complete
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Timestamp */}
+                    <div className="history-timestamp">
+                      {formatDate(item.lastReadAt || item.createdAt)}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -138,4 +192,3 @@ const ReadingHistory = () => {
 };
 
 export default ReadingHistory;
-

@@ -1,4 +1,3 @@
-// src/components/common/Header.js
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +15,8 @@ import {
   Brain,
   Clock
 } from 'lucide-react';
+import LinesLogo from './LinesLogo'; // Ensure this file exists
+import '../../styles/components/Header.css';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,12 +31,14 @@ const Header = () => {
     if (searchQuery.trim()) {
       navigate(`/articles?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setIsMenuOpen(false);
     }
   };
 
   const handleLogout = async () => {
     await logout();
     navigate('/');
+    setIsMenuOpen(false);
   };
 
   const isActiveRoute = (path) => {
@@ -50,144 +53,84 @@ const Header = () => {
   ];
 
   return (
-    <header style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      background: 'white',
-      borderBottom: '1px solid #e2e8f0',
-      zIndex: 1000,
-      padding: '1rem 2rem'
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
+    <header className="header">
+      <div className="header-container">
         {/* Logo */}
-        <div>
-          <Link to="/" style={{ textDecoration: 'none', color: '#3182ce', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Lines
+        <div className="logo-container">
+          <Link to="/" aria-label="Lines Home">
+            <LinesLogo height={40} animated={true} theme={theme} className="header-logo" />
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav style={{ display: 'flex', gap: '2rem' }}>
-          {navLinks.map(({ path, label, icon: Icon }) => (
-            <Link
-              key={path}
-              to={path}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 1rem',
-                color: isActiveRoute(path) ? '#3182ce' : '#4a5568',
-                textDecoration: 'none',
-                borderRadius: '8px',
-                backgroundColor: isActiveRoute(path) ? '#f7fafc' : 'transparent'
-              }}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </nav>
+        {/* Hamburger Menu for Mobile */}
+        <button
+          className={`hamburger ${isMenuOpen ? 'active' : ''}`}
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <div></div>
+          <div></div>
+          <div></div>
+        </button>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: '400px', margin: '0 2rem' }}>
-          <div style={{ position: 'relative' }}>
-            <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a0aec0' }} size={18} />
-            <input
-              type="text"
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem 0.75rem 2.5rem',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                background: '#f7fafc'
-              }}
-            />
-          </div>
-        </form>
+        {/* Navigation and Search Container */}
+        <div className={`nav-container ${isMenuOpen ? 'active' : ''}`}>
+          {/* Desktop and Mobile Navigation */}
+          <nav className="nav-links">
+            {navLinks.map(({ path, label, icon: Icon }) => (
+              <Link
+                key={path}
+                to={path}
+                className={isActiveRoute(path) ? 'active' : ''}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="search-form">
+            <div className="search-wrapper">
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+        </div>
 
         {/* Theme Toggle & User Menu */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button
+        <div className="auth-container">
+          {/* <button
             onClick={toggleTheme}
-            style={{
-              padding: '0.5rem',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              borderRadius: '8px'
-            }}
+            title="Toggle theme"
+            aria-label="Toggle theme"
           >
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          </button> */}
 
           {isAuthenticated ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Link 
-                to="/profile" 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  textDecoration: 'none',
-                  color: '#4a5568'
-                }}
-              >
+            <div className="auth-links">
+              <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
                 <User size={20} />
                 <span>{user?.fullName || 'Profile'}</span>
               </Link>
-              <button 
-                onClick={handleLogout}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  background: '#e53e3e',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
+              <button onClick={handleLogout}>
                 <LogOut size={18} />
                 <span>Logout</span>
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <Link 
-                to="/login" 
-                style={{
-                  padding: '0.5rem 1rem',
-                  textDecoration: 'none',
-                  color: '#4a5568',
-                  borderRadius: '8px'
-                }}
-              >
+            <div className="auth-links">
+              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
                 Login
               </Link>
-              <Link 
-                to="/register" 
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: '#3182ce',
-                  color: 'white',
-                  textDecoration: 'none',
-                  borderRadius: '8px'
-                }}
-              >
+              <Link to="/register" onClick={() => setIsMenuOpen(false)}>
                 Register
               </Link>
             </div>
@@ -199,4 +142,3 @@ const Header = () => {
 };
 
 export default Header;
-

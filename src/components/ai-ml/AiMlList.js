@@ -4,6 +4,7 @@ import React from 'react';
 import AiMlCard from './AiMlCard';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/ErrorMessage';
+import '../../styles/components/AiMlList.css';
 
 const AiMlList = ({ articles, loading, error }) => {
   if (loading) return <LoadingSpinner />;
@@ -30,4 +31,3 @@ const AiMlList = ({ articles, loading, error }) => {
 };
 
 export default AiMlList;
-

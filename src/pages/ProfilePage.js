@@ -1,16 +1,14 @@
- 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { userService } from '../services/userService';
 import UserProfile from '../components/profile/UserProfile';
-import UserDashboard from '../components/profile/UserDashboard';
 import ReadingHistory from '../components/profile/ReadingHistory';
 import FavoritesList from '../components/profile/FavoritesList';
+import NotificationsList from '../components/profile/NotificationsList'; // New component
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { 
   User, 
-  BarChart3, 
   Clock, 
   Heart,
   Settings,
@@ -19,44 +17,188 @@ import {
 import '../styles/pages/ProfilePage.css';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { user, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState('profile'); // Default to profile
+  const queryClient = useQueryClient();
 
-  // Fetch user dashboard data
-  const { data: dashboardData, isLoading: dashboardLoading } = useQuery(
-    'user-dashboard',
-    () => userService.getUserDashboard(),
-    { staleTime: 5 * 60 * 1000 }
+  // Get tab from URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['profile', 'history', 'favorites', 'notifications'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
+
+  // Fetch favorites when on favorites tab
+  const { 
+    data: favoritesData, 
+    isLoading: favoritesLoading,
+    error: favoritesError,
+    refetch: refetchFavorites
+  } = useQuery(
+    ['user-favorites', user?.id],
+    () => userService.getFavorites({ limit: 50 }),
+    { 
+      enabled: isAuthenticated && activeTab === 'favorites',
+      staleTime: 2 * 60 * 1000,
+      retry: 1
+    }
   );
+
+  // Fetch reading history when on history tab
+  const { 
+    data: historyData, 
+    isLoading: historyLoading,
+    error: historyError 
+  } = useQuery(
+    ['reading-history', user?.id],
+    () => userService.getReadingHistory({ limit: 50 }),
+    { 
+      enabled: isAuthenticated && activeTab === 'history',
+      staleTime: 5 * 60 * 1000,
+      retry: 1
+    }
+  );
+
+  // Fetch notifications when on notifications tab
+  const { 
+    data: notificationsData, 
+    isLoading: notificationsLoading,
+    error: notificationsError,
+    refetch: refetchNotifications
+  } = useQuery(
+    ['user-notifications', user?.id],
+    () => userService.getNotifications({ limit: 50, unreadOnly: false }),
+    { 
+      enabled: isAuthenticated && activeTab === 'notifications',
+      staleTime: 1 * 60 * 1000,
+      retry: 1
+    }
+  );
+
+  // Mutation for marking notification as read
+  const markAsReadMutation = useMutation(
+    (notificationId) => userService.markNotificationAsRead(notificationId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['user-notifications']);
+      },
+      onError: (error) => {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+  );
+
+  // Mutation for marking all as read
+  const markAllAsReadMutation = useMutation(
+    () => userService.markAllNotificationsAsRead(),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['user-notifications']);
+      },
+      onError: (error) => {
+        console.error('Error marking all notifications as read:', error);
+      }
+    }
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <div className="profile-page">
+        <div className="container">
+          <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+            <h2>Please login to view your profile</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: BarChart3,
-      component: UserDashboard
-    },
-    {
       id: 'profile',
       label: 'Profile',
-      icon: User,
-      component: UserProfile
+      icon: User
     },
     {
       id: 'history',
       label: 'Reading History',
-      icon: Clock,
-      component: ReadingHistory
+      icon: Clock
     },
     {
       id: 'favorites',
       label: 'Favorites',
-      icon: Heart,
-      component: FavoritesList
+      icon: Heart
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: Bell
     }
   ];
 
-  const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || UserDashboard;
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return <UserProfile user={user} />;
+
+      case 'history':
+        if (historyLoading) return <LoadingSpinner />;
+        if (historyError) {
+          return (
+            <div className="error-state">
+              <p>Unable to load reading history.</p>
+            </div>
+          );
+        }
+        return (
+          <ReadingHistory 
+            historyData={historyData?.data || { history: [] }}
+          />
+        );
+
+      case 'favorites':
+        if (favoritesError) {
+          return (
+            <div className="error-state">
+              <p>Unable to load favorites. Please try again.</p>
+              <button onClick={() => refetchFavorites()}>Retry</button>
+            </div>
+          );
+        }
+        // Always render, even if empty
+        const safeFavoritesData = favoritesData?.data || { favorites: [] };
+        return (
+          <FavoritesList 
+            favoritesData={safeFavoritesData}
+            onRefetch={refetchFavorites}
+          />
+        );
+
+      case 'notifications':
+        if (notificationsLoading) return <LoadingSpinner />;
+        if (notificationsError) {
+          return (
+            <div className="error-state">
+              <p>Unable to load notifications.</p>
+              <button onClick={() => refetchNotifications()}>Retry</button>
+            </div>
+          );
+        }
+        return (
+          <NotificationsList 
+            notificationsData={notificationsData?.data || { notifications: [] }}
+            onMarkAsRead={markAsReadMutation.mutate}
+            onMarkAllAsRead={markAllAsReadMutation.mutate}
+            isMarkingAsRead={markAsReadMutation.isLoading || markAllAsReadMutation.isLoading}
+          />
+        );
+
+      default:
+        return <UserProfile user={user} />;
+    }
+  };
 
   return (
     <div className="profile-page">
@@ -69,25 +211,27 @@ const ProfilePage = () => {
                 <img src={user.avatar} alt={user.fullName} />
               ) : (
                 <div className="avatar-placeholder">
-                  {user?.fullName?.charAt(0) || 'U'}
+                  {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
             </div>
             <div className="user-details">
               <h1 className="user-name">{user?.fullName || 'User'}</h1>
               <p className="user-email">{user?.email}</p>
-              <p className="user-role">Role: {user?.role || 'USER'}</p>
+              <p className="user-role">
+                <span className="role-badge">{user?.role || 'USER'}</span>
+              </p>
             </div>
           </div>
           
           <div className="header-actions">
-            <button className="settings-btn">
+            <button className="settings-btn" title="Settings">
               <Settings size={18} />
-              Settings
+              <span>Settings</span>
             </button>
-            <button className="notifications-btn">
+            <button className="notifications-btn" title="Notifications" onClick={() => setActiveTab('notifications')}>
               <Bell size={18} />
-              Notifications
+              <span>Notifications</span>
             </button>
           </div>
         </div>
@@ -108,14 +252,7 @@ const ProfilePage = () => {
 
         {/* Content Area */}
         <div className="profile-content">
-          {dashboardLoading && activeTab === 'dashboard' ? (
-            <LoadingSpinner />
-          ) : (
-            <ActiveComponent 
-              user={user} 
-              dashboardData={dashboardData?.data}
-            />
-          )}
+          {renderContent()}
         </div>
       </div>
     </div>

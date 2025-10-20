@@ -1,0 +1,127 @@
+.footer {
+  background: #ffffff;
+  color: #374151;
+  padding: 0.5rem 1rem;
+  margin-top: auto;
+  border-top: 1px solid #e5e7eb;
+  position: relative;
+  z-index: 1000;
+  transition: background 0.3s ease;
+}
+
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.footer-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-link {
+  color: #4b5563;
+  text-decoration: none;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  border-radius: 8px;
+}
+
+.footer-link:hover,
+.footer-link:focus {
+  color: #2563eb;
+  background: #eff6ff;
+  transform: scale(1.1);
+}
+
+.logo-link {
+  padding: 0.5rem;
+}
+
+.logo-link svg {
+  height: 24px;
+}
+
+.footer-bottom {
+  display: none;
+  text-align: center;
+  padding-top: 0.5rem;
+  color: #6b7280;
+  font-size: 0.85rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Mobile View (App-like Bottom Nav) */
+@media (max-width: 768px) {
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5rem;
+    background: #ffffff;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .footer-nav {
+    justify-content: space-between;
+    padding: 0 0.5rem;
+  }
+
+  .footer-link {
+    padding: 0.5rem;
+    font-size: 0;
+    /* Hide text labels on mobile */
+  }
+
+  .logo-link svg {
+    height: 22px;
+  }
+
+  .footer-bottom {
+    display: none;
+    /* Hide copyright on mobile for app-like feel */
+  }
+}
+
+/* Tablet and Laptop View */
+@media (min-width: 769px) {
+  .footer {
+    padding: 1rem;
+  }
+
+  .footer-nav {
+    justify-content: center;
+    gap: 1.5rem;
+  }
+
+  .footer-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    /* Show text labels on larger screens */
+  }
+
+  .footer-link:not(.logo-link)::before {
+    content: attr(aria-label);
+    margin-left: 0.5rem;
+  }
+
+  .footer-bottom {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .footer-nav {
+    gap: 1rem;
+  }
+
+  .footer-link {
+    padding: 0.5rem 0.75rem;
+  }
+}

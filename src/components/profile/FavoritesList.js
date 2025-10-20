@@ -1,181 +1,218 @@
- 
-// src/components/profile/FavoritesList.js
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { userService } from '../../services/userService';
-import { 
-  Heart, 
-  Trash2, 
-  Download,
-  Eye,
-  Calendar
-} from 'lucide-react';
-import LoadingSpinner from '../common/LoadingSpinner';
-import Pagination from '../common/Pagination';
 
-const FavoritesList = () => {
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 12,
-    category: '',
-    sortBy: 'savedAt',
-    order: 'desc'
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Heart, Trash2, Download, Search, Filter } from 'lucide-react';
+import { userService } from '../../services/userService';
+import ArticleCard from '../articles/ArticleCard';
+import LoadingSpinner from '../common/LoadingSpinner';
+import '../../styles/components/FavoritesList.css';
+
+const FavoritesList = ({ favoritesData, onRefetch, error }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isClearing, setIsClearing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isUnfavoriting, setIsUnfavoriting] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('all');
+
+  const favorites = favoritesData?.favorites || [];
+  const stats = favoritesData?.stats || {
+    total: 0,
+    categories: {}
+  };
+
+  // Filter favorites based on search and category
+  const filteredFavorites = favorites.filter(fav => {
+    const matchesSearch = searchQuery === '' || 
+      fav.article?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      fav.article?.headline?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = filterCategory === 'all' || 
+      fav.article?.category === filterCategory ||
+      fav.article?.categoryDisplayName === filterCategory;
+    
+    return matchesSearch && matchesCategory;
   });
 
-  const queryClient = useQueryClient();
-
-  const { data: favoritesData, isLoading } = useQuery(
-    ['favorites', filters],
-    () => userService.getFavorites(filters),
-    { keepPreviousData: true }
-  );
-
-  const removeFavoriteMutation = useMutation(
-    (articleId) => userService.removeFromFavorites(articleId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('favorites');
-        queryClient.invalidateQueries('favorites-stats');
-      }
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to remove all favorites? This action cannot be undone.')) {
+      return;
     }
-  );
 
-  const clearAllMutation = useMutation(
-    () => userService.clearAllFavorites(),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('favorites');
-        queryClient.invalidateQueries('favorites-stats');
-      }
-    }
-  );
-
-  const handleRemoveFavorite = (articleId) => {
-    if (window.confirm('Remove this article from favorites?')) {
-      removeFavoriteMutation.mutate(articleId);
-    }
-  };
-
-  const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to clear all favorites? This cannot be undone.')) {
-      clearAllMutation.mutate();
-    }
-  };
-
-  const handleExport = async (format) => {
+    setIsClearing(true);
     try {
-      const data = await userService.exportFavorites(format);
-      // Handle download logic here
-      console.log('Export data:', data);
+      await userService.clearAllFavorites();
+      if (onRefetch) onRefetch();
+      alert('All favorites cleared successfully');
     } catch (error) {
-      alert('Failed to export favorites');
+      console.error('Error clearing favorites:', error);
+      alert('Failed to clear favorites. Please try again.');
+    } finally {
+      setIsClearing(false);
     }
   };
 
-  const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
+  const handleExport = async (format = 'json') => {
+    setIsExporting(true);
+    try {
+      const response = await userService.exportFavorites(format);
+      
+      // Create download link
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+        type: 'application/json'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `favorites-${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting favorites:', error);
+      alert('Failed to export favorites. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  if (isLoading) {
-    return <LoadingSpinner message="Loading favorites..." />;
-  }
+  const handleUnfavorite = async (articleId) => {
+    setIsUnfavoriting(true);
+    try {
+      await userService.removeFromFavorites(articleId);
+      if (onRefetch) onRefetch();
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      alert('Failed to remove favorite. Please try again.');
+    } finally {
+      setIsUnfavoriting(false);
+    }
+  };
 
-  const favorites = favoritesData?.data?.favorites || [];
-  const pagination = favoritesData?.data?.pagination || {};
+  // Get unique categories
+  const categories = ['all', ...new Set(
+    favorites.map(fav => 
+      fav.article?.categoryDisplayName || fav.article?.category || 'Uncategorized'
+    )
+  )];
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="error-state">
+        <p>Unable to load favorites.</p>
+        <button onClick={onRefetch}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="favorites-list">
+      {/* Header */}
       <div className="favorites-header">
-        <h2>
-          <Heart size={24} />
-          My Favorites
-        </h2>
+        <div className="header-info">
+          <h2 className="favorites-title">
+            <Heart size={24} fill="currentColor" />
+            My Favorites
+          </h2>
+          <p className="favorites-count">
+            {stats.total || favorites.length} article{favorites.length !== 1 ? 's' : ''} saved
+          </p>
+        </div>
+
         <div className="header-actions">
-          <button 
+          <button
             onClick={() => handleExport('json')}
+            disabled={isExporting || favorites.length === 0}
             className="export-btn"
+            title="Export favorites"
           >
-            <Download size={16} />
-            Export
+            <Download size={18} />
+            <span>Export</span>
           </button>
-          {favorites.length > 0 && (
-            <button 
-              onClick={handleClearAll}
-              className="clear-btn"
-              disabled={clearAllMutation.isLoading}
-            >
-              <Trash2 size={16} />
-              Clear All
-            </button>
-          )}
+          
+          <button
+            onClick={handleClearAll}
+            disabled={isClearing || favorites.length === 0}
+            className="clear-btn"
+            title="Clear all favorites"
+          >
+            <Trash2 size={18} />
+            <span>Clear All</span>
+          </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="favorites-controls">
-        <select
-          value={`${filters.sortBy}-${filters.order}`}
-          onChange={(e) => {
-            const [sortBy, order] = e.target.value.split('-');
-            setFilters(prev => ({ ...prev, sortBy, order, page: 1 }));
-          }}
-          className="sort-select"
-        >
-          <option value="savedAt-desc">Recently Saved</option>
-          <option value="publishedAt-desc">Recently Published</option>
-          <option value="viewCount-desc">Most Popular</option>
-        </select>
-      </div>
-
-      {/* Favorites Grid */}
-      {favorites.length > 0 ? (
-        <>
-          <div className="favorites-grid">
-            {favorites.map((favorite) => (
-              <div key={favorite.id} className="favorite-card">
-                <div className="favorite-content">
-                  <h3 className="favorite-title">{favorite.article?.title}</h3>
-                  <p className="favorite-category">{favorite.article?.category}</p>
-                  
-                  <div className="favorite-meta">
-                    <span className="view-count">
-                      <Eye size={12} />
-                      {favorite.article?.viewCount || 0}
-                    </span>
-                    <span className="saved-date">
-                      <Calendar size={12} />
-                      {new Date(favorite.savedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => handleRemoveFavorite(favorite.article?.id)}
-                  className="remove-favorite"
-                  disabled={removeFavoriteMutation.isLoading}
-                  title="Remove from favorites"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
+      {favorites.length > 0 && (
+        <div className="favorites-filters">
+          <div className="search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search favorites..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
           </div>
 
-          {pagination.totalPages > 1 && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-              showInfo={true}
-              totalItems={pagination.totalCount}
-            />
-          )}
-        </>
-      ) : (
-        <div className="no-favorites">
-          <Heart size={48} />
+          <div className="category-filter">
+            <Filter size={18} />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="filter-select"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>
+                  {category === 'all' ? 'All Categories' : category}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      {favorites.length === 0 ? (
+        <div className="empty-favorites">
+          <Heart size={64} strokeWidth={1} />
           <h3>No favorites yet</h3>
-          <p>Save articles you love to find them easily later</p>
+          <p>Start adding articles to your favorites to see them here</p>
+          <Link to="/articles" className="browse-btn">
+            Browse Articles
+          </Link>
+        </div>
+      ) : filteredFavorites.length === 0 ? (
+        <div className="empty-favorites">
+          <Search size={64} strokeWidth={1} />
+          <h3>No results found</h3>
+          <p>Try adjusting your search or filter</p>
+          <button 
+            onClick={() => {
+              setSearchQuery('');
+              setFilterCategory('all');
+            }}
+            className="reset-btn"
+          >
+            Reset Filters
+          </button>
+        </div>
+      ) : (
+        <div className="favorites-grid">
+          {filteredFavorites.map((favorite) => (
+            <div key={favorite.id} className="favorite-item">
+              <ArticleCard
+                article={favorite.article}
+                onFavoriteChange={(articleId, isFavorite) => {
+                  if (!isFavorite) {
+                    handleUnfavorite(articleId);
+                  }
+                }}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>

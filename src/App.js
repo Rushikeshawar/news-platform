@@ -1,3 +1,6 @@
+// ============================================
+// FILE 1: src/App.js (UPDATED)
+// ============================================
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
@@ -14,6 +17,7 @@ import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
 import ArticleDetailsPage from './pages/ArticleDetailsPage';
 import AiMlPage from './pages/AiMlPage';
+import AiMlDetailPage from './pages/AiMlDetailPage'; // NEW IMPORT
 import TimeSaverPage from './pages/TimeSaverPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
@@ -50,9 +54,9 @@ function App() {
                   <Route path="/articles" element={<ArticlesPage />} />
                   <Route path="/articles/:id" element={<ArticleDetailsPage />} />
                   
-                  {/* AI/ML */}
+                  {/* AI/ML Routes - UPDATED */}
                   <Route path="/ai-ml" element={<AiMlPage />} />
-                  <Route path="/ai-ml/:id" element={<AiMlPage />} />
+                  <Route path="/ai-ml/:id" element={<AiMlDetailPage />} /> {/* CHANGED */}
                   
                   {/* Time Saver */}
                   <Route path="/time-saver" element={<TimeSaverPage />} />

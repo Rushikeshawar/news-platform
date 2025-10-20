@@ -1,5 +1,4 @@
- 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { useSearchParams } from 'react-router-dom';
 import { aiMlService } from '../services/aiMlService';
@@ -7,8 +6,9 @@ import AiMlCard from '../components/ai-ml/AiMlCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Pagination from '../components/common/Pagination';
-import { Brain, Search, Filter, TrendingUp, Cpu, Zap } from 'lucide-react';
+import { Brain, Search, Filter, TrendingUp, Cpu, Zap, X } from 'lucide-react';
 import '../styles/pages/AiMlPage.css';
+import debounce from 'lodash.debounce';
 
 const AiMlPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,22 +22,33 @@ const AiMlPage = () => {
   });
   const [searchQuery, setSearchQuery] = useState(filters.q);
 
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((query) => {
+        handleFilterChange({ q: query });
+      }, 600),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
   // Fetch AI/ML news
   const { data: aiMlData, isLoading, error, refetch } = useQuery(
     ['aiml-news', filters],
-    () => filters.q ? 
-      aiMlService.searchAiMlContent(filters) : 
-      aiMlService.getAiMlNews(filters),
-    {
-      keepPreviousData: true,
-      staleTime: 2 * 60 * 1000
-    }
+    () =>
+      filters.q
+        ? aiMlService.searchAiMlContent(filters)
+        : aiMlService.getAiMlNews(filters),
+    { keepPreviousData: true, staleTime: 2 * 60 * 1000 }
   );
 
   // Fetch categories
   const { data: categoriesData } = useQuery(
     'aiml-categories',
-    () => aiMlService.getAiMlCategories(),
+    aiMlService.getAiMlCategories,
     { staleTime: 10 * 60 * 1000 }
   );
 
@@ -67,21 +78,17 @@ const AiMlPage = () => {
   }, [filters, setSearchParams]);
 
   const handleFilterChange = (newFilters) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters,
-      page: 1 // Reset page when filters change
-    }));
+    setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
   const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    handleFilterChange({ q: searchQuery });
+  const handleSearchInput = (e) => {
+    setSearchQuery(e.target.value);
+    debouncedSearch(e.target.value);
   };
 
   const clearFilters = () => {
@@ -106,8 +113,8 @@ const AiMlPage = () => {
     return (
       <div className="aiml-page">
         <div className="container">
-          <ErrorMessage 
-            message="Failed to load AI/ML content" 
+          <ErrorMessage
+            message="Failed to load AI/ML content"
             onRetry={refetch}
           />
         </div>
@@ -132,33 +139,17 @@ const AiMlPage = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="search-section">
-          <form onSubmit={handleSearch} className="search-form">
-            <div className="search-input-group">
-              <Search className="search-icon" size={20} />
-              <input
-                type="text"
-                placeholder="Search AI/ML articles, companies, models..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
-              <button type="submit" className="search-btn">
-                Search
-              </button>
-            </div>
-          </form>
-        </div>
+      
 
+
+        {/* Layout */}
         <div className="aiml-layout">
           {/* Sidebar */}
           <aside className="aiml-sidebar">
             {/* Categories */}
             <div className="sidebar-section">
               <h3 className="sidebar-title">
-                <Filter size={18} />
-                Categories
+                <Filter size={18} /> Categories
               </h3>
               <div className="categories-list">
                 <button
@@ -184,18 +175,15 @@ const AiMlPage = () => {
             {popularTopics.length > 0 && (
               <div className="sidebar-section">
                 <h3 className="sidebar-title">
-                  <Zap size={18} />
-                  Popular Topics
+                  <Zap size={18} /> Popular Topics
                 </h3>
                 <div className="topics-cloud">
                   {popularTopics.map((topic, index) => (
                     <button
                       key={index}
                       className="topic-tag"
-                      onClick={() => setSearchQuery(topic.topic)}
-                      style={{
-                        fontSize: `${Math.min(16, 12 + (topic.score / 100) * 4)}px`
-                      }}
+                      onClick={() => handleFilterChange({ q: topic.topic })}
+                      style={{ fontSize: `${12 + (topic.score / 100) * 4}px` }}
                     >
                       {topic.topic}
                     </button>
@@ -208,19 +196,21 @@ const AiMlPage = () => {
             {trendingArticles.length > 0 && (
               <div className="sidebar-section">
                 <h3 className="sidebar-title">
-                  <TrendingUp size={18} />
-                  Trending in AI/ML
+                  <TrendingUp size={18} /> Trending in AI/ML
                 </h3>
                 <div className="trending-list">
                   {trendingArticles.map((article) => (
-                    <div key={article.id} className="trending-item">
+                    <div
+                      key={article.id}
+                      className="trending-item"
+                      onClick={() => handleFilterChange({ q: article.headline })}
+                    >
                       <h4 className="trending-title">{article.headline}</h4>
                       <div className="trending-meta">
                         <span className="view-count">{article.viewCount} views</span>
                         {article.aiModel && (
                           <span className="ai-model">
-                            <Cpu size={12} />
-                            {article.aiModel}
+                            <Cpu size={12} /> {article.aiModel}
                           </span>
                         )}
                       </div>
@@ -233,18 +223,38 @@ const AiMlPage = () => {
 
           {/* Main Content */}
           <main className="aiml-main">
-            {/* Active Filters */}
+
+              {/* Search Section */}
+        {/* Search Section */}
+                <div className="search-section">
+  <div className="search-container">
+  
+    <input
+      type="text"
+      placeholder="Search AI/ML articles, companies, models..."
+      value={searchQuery}
+      onChange={handleSearchInput}
+      className="search-input"
+    />
+    {searchQuery && (
+      <X
+        size={18}
+        className="clear-search"
+        onClick={() => {
+          setSearchQuery('');
+          debouncedSearch('');
+        }}
+      />
+    )}
+  </div>
+</div>
             {(filters.category || filters.q) && (
               <div className="active-filters">
                 {filters.category && (
-                  <span className="filter-tag">
-                    Category: {filters.category}
-                  </span>
+                  <span className="filter-tag">Category: {filters.category}</span>
                 )}
                 {filters.q && (
-                  <span className="filter-tag">
-                    Search: "{filters.q}"
-                  </span>
+                  <span className="filter-tag">Search: "{filters.q}"</span>
                 )}
                 <button onClick={clearFilters} className="clear-filters-btn">
                   Clear All
@@ -252,37 +262,34 @@ const AiMlPage = () => {
               </div>
             )}
 
-            {/* Results Header */}
             <div className="results-header">
               <div className="results-info">
                 {isLoading ? (
                   <span>Loading...</span>
                 ) : (
                   <span>
-                    {pagination.totalCount || 0} AI/ML articles found
-                    {filters.q && ` for "${filters.q}"`}
+                    {pagination.totalCount || 0} AI/ML articles found{' '}
+                    {filters.q && `for "${filters.q}"`}
                   </span>
                 )}
               </div>
               <div className="sort-controls">
-                <select
-                  value={`${filters.sortBy}-${filters.order}`}
-                  onChange={(e) => {
-                    const [sortBy, order] = e.target.value.split('-');
-                    handleFilterChange({ sortBy, order });
-                  }}
-                  className="sort-select"
-                >
-                  <option value="publishedAt-desc">Newest First</option>
-                  <option value="publishedAt-asc">Oldest First</option>
-                  <option value="relevance-desc">Most Relevant</option>
-                  <option value="viewCount-desc">Most Viewed</option>
-                  <option value="shareCount-desc">Most Shared</option>
-                </select>
-              </div>
+  <select
+    value={`${filters.sortBy}-${filters.order}`}
+    onChange={(e) => {
+      const [sortBy, order] = e.target.value.split('-');
+      handleFilterChange({ sortBy, order });
+    }}
+    className="sort-select"
+  >
+    <option value="publishedAt-desc">Newest First</option>
+    <option value="publishedAt-asc">Oldest First</option>
+    <option value="viewCount-desc">Most Viewed</option>
+    <option value="shareCount-desc">Most Shared</option>
+  </select>
+</div>
             </div>
 
-            {/* Articles Grid */}
             {isLoading ? (
               <LoadingSpinner />
             ) : articles.length > 0 ? (
@@ -292,8 +299,6 @@ const AiMlPage = () => {
                     <AiMlCard key={article.id} article={article} />
                   ))}
                 </div>
-
-                {/* Pagination */}
                 {pagination.totalPages > 1 && (
                   <Pagination
                     currentPage={pagination.page}

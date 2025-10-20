@@ -1,4 +1,7 @@
- 
+
+// ============================================
+// FILE 2: src/services/aiMlService.js (UPDATED)
+// ============================================
 import api from './api';
 
 export const aiMlService = {
@@ -36,29 +39,50 @@ export const aiMlService = {
 
   // Get articles by AI/ML category
   getArticlesByCategory: async (category, params = {}) => {
-    const response = await api.get(`/ai-ml/categories/${category}/articles`, { params });
+    const response = await api.get(`/ai-ml/category/${category}`, { params });
     return response.data;
   },
 
   // Get popular AI topics
   getPopularTopics: async (params = {}) => {
-    const response = await api.get('/ai-ml/popular-topics', { params });
+    const response = await api.get('/ai-ml/topics/popular', { params });
     return response.data;
   },
 
   // Track AI article view
   trackAiArticleView: async (id, timestamp = new Date()) => {
-    const response = await api.post(`/ai-ml/articles/${id}/view`, { timestamp });
-    return response.data;
+    try {
+      const response = await api.post(`/ai-ml/news/${id}/view`, { timestamp });
+      return response.data;
+    } catch (error) {
+      console.error('Error tracking view:', error);
+      return null;
+    }
   },
 
   // Track AI article interaction
   trackAiArticleInteraction: async (id, interactionType, timestamp = new Date()) => {
-    const response = await api.post(`/ai-ml/articles/${id}/interaction`, {
-      interactionType,
-      timestamp
-    });
-    return response.data;
+    try {
+      const response = await api.post(`/ai-ml/news/${id}/interaction`, {
+        interactionType,
+        timestamp
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error tracking interaction:', error);
+      return null;
+    }
+  },
+
+  // Get TimeSaver content linked to AI article (NEW)
+  getAiArticleTimeSavers: async (id) => {
+    try {
+      const response = await api.get(`/ai-ml/news/${id}/timesavers`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching timesavers:', error);
+      return { data: { timeSavers: [] } };
+    }
   },
 
   // Get AI insights and analytics
