@@ -252,7 +252,7 @@ const ArticlesPage = () => {
                   <option value="publishedAt-asc">Oldest First</option>
                   <option value="viewCount-desc">Most Viewed</option>
                   <option value="shareCount-desc">Most Shared</option>
-                  <option value="title-asc">Title A-Z</option>
+                  {/* <option value="title-asc">Title A-Z</option> */}
                 </select>
               </div>
             </div>

@@ -172,26 +172,28 @@ const AiMlPage = () => {
             </div>
 
             {/* Popular Topics */}
+              {/* Popular Topics */}
             {popularTopics.length > 0 && (
               <div className="sidebar-section">
                 <h3 className="sidebar-title">
                   <Zap size={18} /> Popular Topics
                 </h3>
-                <div className="topics-cloud">
+                <div className="topics-list">
                   {popularTopics.map((topic, index) => (
                     <button
                       key={index}
-                      className="topic-tag"
+                      className="topic-item"
                       onClick={() => handleFilterChange({ q: topic.topic })}
-                      style={{ fontSize: `${12 + (topic.score / 100) * 4}px` }}
                     >
-                      {topic.topic}
+                      <span className="topic-name">{topic.topic}</span>
+                      {topic.score && (
+                        <span className="topic-score">{topic.score}</span>
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
             {/* Trending Articles */}
             {trendingArticles.length > 0 && (
               <div className="sidebar-section">

@@ -106,13 +106,7 @@ const Header = () => {
 
         {/* Theme Toggle & User Menu */}
         <div className="auth-container">
-          {/* <button
-            onClick={toggleTheme}
-            title="Toggle theme"
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button> */}
+
 
           {isAuthenticated ? (
             <div className="auth-links">

@@ -1,4 +1,3 @@
-// src/components/profile/ReadingHistory.js
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Calendar, Search, BookOpen } from 'lucide-react';
@@ -6,16 +5,13 @@ import '../../styles/components/ReadingHistory.css';
 
 const ReadingHistory = ({ historyData }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const history = historyData?.history || [];
+  const history = historyData?.readingHistory || [];
 
   // Filter history based on search
-  const filteredHistory = history.filter(item => {
+  const filteredHistory = history.filter((item) => {
     if (searchQuery === '') return true;
-    
     const searchLower = searchQuery.toLowerCase();
     return (
-      item.article?.title?.toLowerCase().includes(searchLower) ||
       item.article?.headline?.toLowerCase().includes(searchLower) ||
       item.article?.category?.toLowerCase().includes(searchLower)
     );
@@ -25,15 +21,13 @@ const ReadingHistory = ({ historyData }) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInHours < 48) return 'Yesterday';
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
     });
   };
 
@@ -49,14 +43,13 @@ const ReadingHistory = ({ historyData }) => {
 
   // Group history by date
   const groupedHistory = filteredHistory.reduce((groups, item) => {
-    const date = new Date(item.lastReadAt || item.createdAt);
-    const dateKey = date.toLocaleDateString('en-US', { 
+    const date = new Date(item.updatedAt || item.createdAt);
+    const dateKey = date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
-    
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -66,7 +59,6 @@ const ReadingHistory = ({ historyData }) => {
 
   return (
     <div className="reading-history">
-      {/* Header */}
       <div className="history-header">
         <div className="header-info">
           <h2 className="history-title">
@@ -77,7 +69,6 @@ const ReadingHistory = ({ historyData }) => {
             {history.length} article{history.length !== 1 ? 's' : ''} read
           </p>
         </div>
-
         {history.length > 0 && (
           <div className="search-box">
             <Search size={18} />
@@ -91,8 +82,6 @@ const ReadingHistory = ({ historyData }) => {
           </div>
         )}
       </div>
-
-      {/* Content */}
       {history.length === 0 ? (
         <div className="empty-history">
           <BookOpen size={64} strokeWidth={1} />
@@ -107,10 +96,7 @@ const ReadingHistory = ({ historyData }) => {
           <Search size={64} strokeWidth={1} />
           <h3>No results found</h3>
           <p>Try a different search term</p>
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="reset-btn"
-          >
+          <button onClick={() => setSearchQuery('')} className="reset-btn">
             Clear Search
           </button>
         </div>
@@ -122,64 +108,40 @@ const ReadingHistory = ({ historyData }) => {
                 <Calendar size={16} />
                 <span>{date}</span>
               </div>
-
               <div className="history-items">
                 {items.map((item) => (
-                  <Link
-                    key={item.id}
-                    to={`/articles/${item.articleId}`}
-                    className="history-item"
-                  >
-                    {/* Article Image */}
+                  <Link key={item.id} to={`/articles/${item.articleId}`} className="history-item">
                     <div className="history-image">
-                      {item.article?.featuredImage || item.article?.imageUrl ? (
-                        <img 
-                          src={item.article.featuredImage || item.article.imageUrl} 
-                          alt={item.article.title || item.article.headline}
-                        />
+                      {item.article?.featuredImage ? (
+                        <img src={item.article.featuredImage} alt={item.article.headline} />
                       ) : (
                         <div className="history-image-placeholder">
                           <BookOpen size={24} />
                         </div>
                       )}
                     </div>
-
-                    {/* Article Info */}
                     <div className="history-content">
-                      <h4 className="history-article-title">
-                        {item.article?.title || item.article?.headline}
-                      </h4>
-                      
+                      <h4 className="history-article-title">{item.article?.headline}</h4>
                       <div className="history-meta">
-                        <span className="history-category">
-                          {item.article?.categoryDisplayName || item.article?.category || 'Uncategorized'}
-                        </span>
+                        <span className="history-category">{item.article?.category || 'Uncategorized'}</span>
                         <span className="history-time">
                           <Clock size={14} />
                           {formatReadingTime(item.timeSpent)}
                         </span>
                       </div>
-
-                      {/* Progress Bar */}
-                      {item.progress !== undefined && item.progress > 0 && (
+                      {item.readProgress !== undefined && item.readProgress > 0 && (
                         <div className="history-progress">
                           <div className="progress-bar">
-                            <div 
+                            <div
                               className="progress-fill"
-                              style={{ width: `${item.progress}%` }}
+                              style={{ width: `${item.readProgress * 100}%` }}
                             />
                           </div>
-                          <span className="progress-text">
-                            {item.progress}% complete
-                          </span>
+                          <span className="progress-text">{Math.round(item.readProgress * 100)}% complete</span>
                         </div>
                       )}
                     </div>
-
-                    {/* Timestamp */}
-                    <div className="history-timestamp">
-                      {formatDate(item.lastReadAt || item.createdAt)}
-                    </div>
+                    <div className="history-timestamp">{formatDate(item.updatedAt || item.createdAt)}</div>
                   </Link>
                 ))}
               </div>

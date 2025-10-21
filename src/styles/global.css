@@ -1,4 +1,3 @@
- 
 /* Global Styles */
 
 /* Reset and Base */
@@ -195,7 +194,7 @@ a:hover {
   letter-spacing: 0.5px;
 }
 
-.badge-primary { background: var(--primary-100); color: var(--primary-700); }
+.badge-primary { background: #d6e4ff; color: var(--primary-700); }
 .badge-success { background: #d1fae5; color: #065f46; }
 .badge-warning { background: #fef3c7; color: #92400e; }
 .badge-error { background: #fee2e2; color: #991b1b; }
@@ -267,7 +266,7 @@ a:hover {
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
 }
 
 .form-input::placeholder {
@@ -394,7 +393,7 @@ a:hover {
 
 /* Selection */
 ::selection {
-  background: var(--primary-200);
+  background: #bfdbfe;
   color: var(--primary-900);
 }
 

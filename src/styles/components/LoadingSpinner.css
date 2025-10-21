@@ -10,7 +10,7 @@
 
 .spinner-icon {
   animation: spin 1s linear infinite;
-  color: var(--primary-color);
+  color: var(--primary-600);
 }
 
 .spinner-small .spinner-icon {
@@ -55,7 +55,7 @@
 .loading-dots span {
   width: 12px;
   height: 12px;
-  background: var(--primary-color);
+  background: var(--primary-600);
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
 }
@@ -81,9 +81,9 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--surface-color) 0%,
-    var(--gray-100) 50%,
-    var(--surface-color) 100%
+    var(--gray-100) 0%,
+    var(--gray-200) 50%,
+    var(--gray-100) 100%
   );
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
@@ -113,4 +113,35 @@
 .skeleton-card {
   height: 200px;
   margin-bottom: var(--space-4);
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--gray-700) 0%,
+      var(--gray-600) 50%,
+      var(--gray-700) 100%
+    );
+  }
+
+  .spinner-icon,
+  .loading-dots span {
+    color: var(--primary-500);
+    background: var(--primary-500);
+  }
+
+  .spinner-message {
+    color: var(--text-secondary);
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .spinner-icon,
+  .loading-dots span,
+  .skeleton {
+    animation: none;
+  }
 }

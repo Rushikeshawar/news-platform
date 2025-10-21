@@ -5,20 +5,14 @@ import { userService } from '../services/userService';
 import UserProfile from '../components/profile/UserProfile';
 import ReadingHistory from '../components/profile/ReadingHistory';
 import FavoritesList from '../components/profile/FavoritesList';
-import NotificationsList from '../components/profile/NotificationsList'; // New component
+import NotificationsList from '../components/profile/NotificationsList';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { 
-  User, 
-  Clock, 
-  Heart,
-  Settings,
-  Bell
-} from 'lucide-react';
+import { User, Clock, Heart, Settings, Bell } from 'lucide-react';
 import '../styles/pages/ProfilePage.css';
 
 const ProfilePage = () => {
   const { user, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile'); // Default to profile
+  const [activeTab, setActiveTab] = useState('profile');
   const queryClient = useQueryClient();
 
   // Get tab from URL query params
@@ -31,49 +25,49 @@ const ProfilePage = () => {
   }, []);
 
   // Fetch favorites when on favorites tab
-  const { 
-    data: favoritesData, 
+  const {
+    data: favoritesData,
     isLoading: favoritesLoading,
     error: favoritesError,
-    refetch: refetchFavorites
+    refetch: refetchFavorites,
   } = useQuery(
     ['user-favorites', user?.id],
     () => userService.getFavorites({ limit: 50 }),
-    { 
+    {
       enabled: isAuthenticated && activeTab === 'favorites',
       staleTime: 2 * 60 * 1000,
-      retry: 1
+      retry: 1,
     }
   );
 
   // Fetch reading history when on history tab
-  const { 
-    data: historyData, 
+  const {
+    data: historyData,
     isLoading: historyLoading,
-    error: historyError 
+    error: historyError,
   } = useQuery(
     ['reading-history', user?.id],
     () => userService.getReadingHistory({ limit: 50 }),
-    { 
+    {
       enabled: isAuthenticated && activeTab === 'history',
       staleTime: 5 * 60 * 1000,
-      retry: 1
+      retry: 1,
     }
   );
 
   // Fetch notifications when on notifications tab
-  const { 
-    data: notificationsData, 
+  const {
+    data: notificationsData,
     isLoading: notificationsLoading,
     error: notificationsError,
-    refetch: refetchNotifications
+    refetch: refetchNotifications,
   } = useQuery(
     ['user-notifications', user?.id],
     () => userService.getNotifications({ limit: 50, unreadOnly: false }),
-    { 
+    {
       enabled: isAuthenticated && activeTab === 'notifications',
       staleTime: 1 * 60 * 1000,
-      retry: 1
+      retry: 1,
     }
   );
 
@@ -86,7 +80,8 @@ const ProfilePage = () => {
       },
       onError: (error) => {
         console.error('Error marking notification as read:', error);
-      }
+        alert('Failed to mark notification as read');
+      },
     }
   );
 
@@ -99,7 +94,8 @@ const ProfilePage = () => {
       },
       onError: (error) => {
         console.error('Error marking all notifications as read:', error);
-      }
+        alert('Failed to mark all notifications as read');
+      },
     }
   );
 
@@ -116,85 +112,61 @@ const ProfilePage = () => {
   }
 
   const tabs = [
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: User
-    },
-    {
-      id: 'history',
-      label: 'Reading History',
-      icon: Clock
-    },
-    {
-      id: 'favorites',
-      label: 'Favorites',
-      icon: Heart
-    },
-    {
-      id: 'notifications',
-      label: 'Notifications',
-      icon: Bell
-    }
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'history', label: 'Reading History', icon: Clock },
+    { id: 'favorites', label: 'Favorites', icon: Heart },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'profile':
         return <UserProfile user={user} />;
-
       case 'history':
         if (historyLoading) return <LoadingSpinner />;
         if (historyError) {
           return (
             <div className="error-state">
-              <p>Unable to load reading history.</p>
+              <p>Unable to load reading history: {historyError.message}</p>
+              <button onClick={() => queryClient.refetchQueries(['reading-history'])}>Retry</button>
             </div>
           );
         }
-        return (
-          <ReadingHistory 
-            historyData={historyData?.data || { history: [] }}
-          />
-        );
-
+        return <ReadingHistory historyData={historyData || { readingHistory: [] }} />;
       case 'favorites':
+        if (favoritesLoading) return <LoadingSpinner />;
         if (favoritesError) {
           return (
             <div className="error-state">
-              <p>Unable to load favorites. Please try again.</p>
+              <p>Unable to load favorites: {favoritesError.message}</p>
               <button onClick={() => refetchFavorites()}>Retry</button>
             </div>
           );
         }
-        // Always render, even if empty
-        const safeFavoritesData = favoritesData?.data || { favorites: [] };
         return (
-          <FavoritesList 
-            favoritesData={safeFavoritesData}
+          <FavoritesList
+            favoritesData={favoritesData || { articles: [] }}
             onRefetch={refetchFavorites}
           />
         );
-
       case 'notifications':
         if (notificationsLoading) return <LoadingSpinner />;
         if (notificationsError) {
           return (
             <div className="error-state">
-              <p>Unable to load notifications.</p>
+              <p>Unable to load notifications: {notificationsError.message}</p>
               <button onClick={() => refetchNotifications()}>Retry</button>
             </div>
           );
         }
         return (
-          <NotificationsList 
-            notificationsData={notificationsData?.data || { notifications: [] }}
+          <NotificationsList
+            notificationsData={notificationsData || { notifications: [], unreadCount: 0 }}
             onMarkAsRead={markAsReadMutation.mutate}
             onMarkAllAsRead={markAllAsReadMutation.mutate}
             isMarkingAsRead={markAsReadMutation.isLoading || markAllAsReadMutation.isLoading}
           />
         );
-
       default:
         return <UserProfile user={user} />;
     }
@@ -203,7 +175,6 @@ const ProfilePage = () => {
   return (
     <div className="profile-page">
       <div className="container">
-        {/* Profile Header */}
         <div className="profile-header">
           <div className="user-info">
             <div className="user-avatar">
@@ -223,9 +194,8 @@ const ProfilePage = () => {
               </p>
             </div>
           </div>
-          
           <div className="header-actions">
-            <button className="settings-btn" title="Settings">
+            <button className="settings-btn" title="Settings" onClick={() => setActiveTab('profile')}>
               <Settings size={18} />
               <span>Settings</span>
             </button>
@@ -235,8 +205,6 @@ const ProfilePage = () => {
             </button>
           </div>
         </div>
-
-        {/* Navigation Tabs */}
         <div className="profile-nav">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
@@ -249,11 +217,7 @@ const ProfilePage = () => {
             </button>
           ))}
         </div>
-
-        {/* Content Area */}
-        <div className="profile-content">
-          {renderContent()}
-        </div>
+        <div className="profile-content">{renderContent()}</div>
       </div>
     </div>
   );

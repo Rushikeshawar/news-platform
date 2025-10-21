@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Bell, CheckCircle, AlertCircle, Mail, Clock, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Mail, Clock } from 'lucide-react';
 import LoadingSpinner from '../common/LoadingSpinner';
-import '../../styles/components/NotificationsList.css'; // Add this CSS file
+import '../../styles/components/NotificationsList.css';
 
 const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, isMarkingAsRead }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const notifications = notificationsData?.notifications || [];
+  const unreadCount = notificationsData?.unreadCount || 0;
 
   // Filter notifications based on search
-  const filteredNotifications = notifications.filter(notification => {
+  const filteredNotifications = notifications.filter((notification) => {
     if (searchQuery === '') return true;
-    
     const searchLower = searchQuery.toLowerCase();
     return (
       notification.title?.toLowerCase().includes(searchLower) ||
@@ -31,16 +30,28 @@ const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, i
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' });
+  };
+
+  // Map notification types to icons
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'ARTICLE_REJECTED':
+      case 'SECURITY_ALERT':
+        return <AlertCircle size={20} />;
+      case 'ARTICLE_APPROVED':
+      case 'ARTICLE_PUBLISHED':
+        return <CheckCircle size={20} />;
+      case 'ACCOUNT_UPDATE':
+      case 'SYSTEM_ANNOUNCEMENT':
+      case 'PROMOTIONAL':
+        return <Mail size={20} />;
+      default:
+        return <Bell size={20} />;
+    }
   };
 
   if (notifications.length === 0) {
@@ -55,11 +66,8 @@ const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, i
     );
   }
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
   return (
     <div className="notifications-list">
-      {/* Header */}
       <div className="notifications-header">
         <div className="header-info">
           <h2 className="notifications-title">
@@ -71,7 +79,6 @@ const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, i
             {notifications.length} total
           </p>
         </div>
-
         <div className="header-actions">
           <button
             onClick={handleMarkAllAsRead}
@@ -83,8 +90,6 @@ const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, i
           </button>
         </div>
       </div>
-
-      {/* Search */}
       {notifications.length > 0 && (
         <div className="notifications-search">
           <input
@@ -96,8 +101,6 @@ const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, i
           />
         </div>
       )}
-
-      {/* Content */}
       {filteredNotifications.length === 0 ? (
         <div className="empty-notifications">
           <Bell size={64} strokeWidth={1} />
@@ -111,23 +114,10 @@ const NotificationsList = ({ notificationsData, onMarkAsRead, onMarkAllAsRead, i
         <div className="notifications-grid">
           {filteredNotifications.map((notification) => (
             <div key={notification.id} className={`notification-item ${!notification.isRead ? 'unread' : ''}`}>
-              <div className="notification-icon">
-                {notification.type === 'error' ? (
-                  <AlertCircle size={20} />
-                ) : notification.type === 'email' ? (
-                  <Mail size={20} />
-                ) : (
-                  <Bell size={20} />
-                )}
-              </div>
+              <div className="notification-icon">{getNotificationIcon(notification.type)}</div>
               <div className="notification-content">
                 <h4 className="notification-title">{notification.title}</h4>
                 <p className="notification-message">{notification.message}</p>
-                {notification.link && (
-                  <Link to={notification.link} className="notification-link">
-                    View Details
-                  </Link>
-                )}
                 <div className="notification-meta">
                   <span className="notification-time">
                     <Clock size={14} />

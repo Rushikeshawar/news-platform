@@ -1,3 +1,4 @@
+// src/components/common/ArticleCard.js
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, Share2, Calendar, User, Heart } from 'lucide-react';
@@ -29,10 +30,12 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
   const handleToggleFavorite = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
     if (!isAuthenticated) {
       navigate('/login', { state: { from: window.location.pathname } });
       return;
     }
+
     setIsTogglingFavorite(true);
     try {
       if (isFavorite) {
@@ -42,6 +45,8 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
         await userService.addToFavorites(article.id);
         setIsFavorite(true);
       }
+      
+      // Notify parent component if callback provided
       if (onFavoriteChange) {
         onFavoriteChange(article.id, !isFavorite);
       }
@@ -50,26 +55,6 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
       alert('Failed to update favorites. Please try again.');
     } finally {
       setIsTogglingFavorite(false);
-    }
-  };
-
-  const handleShare = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      const url = `${window.location.origin}/articles/${article.id}`;
-      if (navigator.share) {
-        await navigator.share({
-          title: article.headline || article.title,
-          text: article.briefContent || article.summary || article.excerpt,
-          url,
-        });
-      } else {
-        await navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
-      }
-    } catch (err) {
-      console.error('Error sharing:', err);
     }
   };
 
@@ -90,6 +75,26 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
     return count.toString();
   };
 
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const url = `${window.location.origin}/articles/${article.id}`;
+      if (navigator.share) {
+        await navigator.share({ 
+          title: article.headline || article.title, 
+          text: article.briefContent || article.summary || article.excerpt, 
+          url 
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
   const title = article.headline || article.title;
   const brief = article.briefContent || article.summary || article.excerpt;
   const image = article.featuredImage || article.imageUrl;
@@ -99,6 +104,7 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
   return (
     <article className="article-card">
       <Link to={`/articles/${article.id}`} className="article-link">
+        {/* Article Image */}
         <div className="article-image">
           {image ? (
             <img src={image} alt={title} loading="lazy" />
@@ -106,13 +112,15 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
             <div className="article-image-placeholder">
               <div className="placeholder-content">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
                 </svg>
               </div>
             </div>
           )}
+          
+          {/* Favorite Button Overlay */}
           {isAuthenticated && (
             <button
               className={`favorite-btn ${isFavorite ? 'active' : ''}`}
@@ -120,31 +128,49 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
               disabled={isTogglingFavorite}
               title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
-              <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
+              <Heart 
+                size={20} 
+                fill={isFavorite ? 'currentColor' : 'none'}
+              />
             </button>
           )}
         </div>
+
         <div className="article-content">
+          {/* Category and Date */}
           <div className="article-header">
-            <span className="article-category">{category || 'Uncategorized'}</span>
+            <span className="article-category">
+              {category || 'Uncategorized'}
+            </span>
             <span className="article-date">
               <Calendar size={14} />
               {formatDate(article.publishedAt)}
             </span>
           </div>
+
+          {/* Title */}
           <h3 className="article-title">{title}</h3>
-          {brief && <p className="article-brief">{brief}</p>}
+
+          {/* Brief/Summary */}
+          {brief && (
+            <p className="article-brief">{brief}</p>
+          )}
+
+          {/* Author */}
           {authorName && (
             <div className="article-author">
               <User size={16} />
               <span>{authorName}</span>
             </div>
           )}
+
+          {/* Stats */}
           <div className="article-stats">
             <div className="stat-item">
               <Eye size={16} />
               <span>{formatViewCount(article.viewCount || 0)}</span>
             </div>
+            
             {article.shareCount > 0 && (
               <div className="stat-item">
                 <Share2 size={16} />
@@ -152,7 +178,12 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
               </div>
             )}
           </div>
-          <button className="article-share-btn" onClick={handleShare}>
+
+          {/* Share Button */}
+          <button 
+            className="article-share-btn" 
+            onClick={handleShare}
+          >
             <Share2 size={16} />
             Share
           </button>
