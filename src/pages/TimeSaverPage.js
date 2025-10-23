@@ -57,11 +57,14 @@ const TimeSaverPage = () => {
       const response = await axios.get('/api/time-saver/content', { params });
       
       if (response.data.success) {
-        setContent(response.data.data.content);
-        setPagination(response.data.data.pagination);
+        // ✅ FIXED: Access data directly, not data.content
+        setContent(response.data.data || []);
+        setPagination(response.data.pagination || {});
       }
     } catch (err) {
+      console.error('Error fetching content:', err);
       setError(err.response?.data?.message || 'Failed to load content');
+      setContent([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -246,7 +249,7 @@ const TimeSaverPage = () => {
                 <div className="pagination-section">
                   <button
                     onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={!pagination.hasPrev}
+                    disabled={!pagination.hasMore || pagination.page === 1}
                     className="pagination-button"
                   >
                     Previous
@@ -278,7 +281,7 @@ const TimeSaverPage = () => {
 
                   <button
                     onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={!pagination.hasNext}
+                    disabled={!pagination.hasMore}
                     className="pagination-button"
                   >
                     Next

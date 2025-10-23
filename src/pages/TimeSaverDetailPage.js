@@ -14,17 +14,27 @@ const TimeSaverDetailPage = () => {
   useEffect(() => {
     fetchContentDetail();
     trackView();
-    fetchRelatedContent();
   }, [id]);
+
+  useEffect(() => {
+    if (content?.category) {
+      fetchRelatedContent();
+    }
+  }, [content]);
 
   const fetchContentDetail = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/time-saver/content/${id}`);
+      
+      console.log('API Response:', response.data); // Debug log
+      
       if (response.data.success) {
-        setContent(response.data.data.content);
+        // ✅ FIXED: Access data directly, not data.content
+        setContent(response.data.data);
       }
     } catch (err) {
+      console.error('Error fetching content:', err);
       setError(err.response?.data?.message || 'Failed to load content');
     } finally {
       setLoading(false);
@@ -42,10 +52,17 @@ const TimeSaverDetailPage = () => {
   const fetchRelatedContent = async () => {
     try {
       const response = await axios.get(`/api/time-saver/content`, {
-        params: { category: content?.category, limit: 5, excludeId: id },
+        params: { 
+          category: content?.category, 
+          limit: 5
+        },
       });
+      
       if (response.data.success) {
-        setRelatedContent(response.data.data.content);
+        // ✅ FIXED: Access data directly and filter out current content
+        const allContent = response.data.data || [];
+        const filtered = allContent.filter(item => item.id !== id);
+        setRelatedContent(filtered.slice(0, 5));
       }
     } catch (err) {
       console.error('Failed to load related content:', err);
@@ -55,7 +72,7 @@ const TimeSaverDetailPage = () => {
   const handleInteraction = async (type) => {
     try {
       await axios.post(`/api/time-saver/content/${id}/interaction`, {
-        interactionType: type // Fixed typo here
+        interactionType: type
       });
     } catch (err) {
       console.error('Failed to track interaction:', err);
@@ -105,6 +122,7 @@ const TimeSaverDetailPage = () => {
       SCIENCE: 'card-category-science',
       ENTERTAINMENT: 'card-category-entertainment',
       SPORTS: 'card-category-sports',
+      ENVIRONMENT: 'card-category-health',
       OTHER: 'card-category-other',
     };
     return colors[category] || colors.OTHER;
@@ -171,17 +189,21 @@ const TimeSaverDetailPage = () => {
           <h3 className="sidebar-title">Related Content</h3>
           <div className="filter-section">
             <div className="filter-section-title">More in {content.category}</div>
-            {/* <div className="filter-options">
-              {relatedContent.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => handleArticleClick(item.id, item.isAiArticle ? 'ai' : 'news')}
-                  className="filter-option"
-                >
-                  <span className="line-clamp-2">{item.title}</span>
-                </button>
-              ))}
-            </div> */}
+            <div className="filter-options">
+              {relatedContent.length > 0 ? (
+                relatedContent.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(`/time-saver/${item.id}`)}
+                    className="filter-option"
+                  >
+                    <span className="line-clamp-2">{item.title}</span>
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No related content found</p>
+              )}
+            </div>
           </div>
           {content.tags && (
             <div className="filter-section">
@@ -231,16 +253,19 @@ const TimeSaverDetailPage = () => {
               <p className="card-summary">{content.summary}</p>
 
               {/* Key Points */}
-              {content.keyPoints && (
-                <div className="key-points">
-                  <h3 className="key-points-title">📌 Key Points</h3>
-                  <ul className="key-points-list">
-                    {content.keyPoints.split('|').map((point, index) => (
-                      <li key={index}>{point.trim()}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+{content.keyPoints && (
+  <div className="key-points">
+    <h3 className="key-points-title">📌 Key Points</h3>
+    <ul className="key-points-list">
+      {(typeof content.keyPoints === 'string' 
+        ? content.keyPoints.split('|').filter(p => p.trim()) 
+        : content.keyPoints
+      ).map((point, index) => (
+        <li key={index}>{point.trim()}</li>
+      ))}
+    </ul>
+  </div>
+)}
 
               {/* Action Buttons */}
               <div className="card-actions">
