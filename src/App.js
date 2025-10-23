@@ -17,7 +17,8 @@ import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
 import ArticleDetailsPage from './pages/ArticleDetailsPage';
 import AiMlPage from './pages/AiMlPage';
-import AiMlDetailPage from './pages/AiMlDetailPage'; // NEW IMPORT
+import AiMlDetailPage from './pages/AiMlDetailPage'; 
+import TimeSaverDetailPage from './pages/TimeSaverDetailPage';// NEW IMPORT
 import TimeSaverPage from './pages/TimeSaverPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
@@ -59,7 +60,8 @@ function App() {
                   <Route path="/ai-ml/:id" element={<AiMlDetailPage />} /> {/* CHANGED */}
                   
                   {/* Time Saver */}
-                  <Route path="/time-saver" element={<TimeSaverPage />} />
+        <Route path="/time-saver" element={<TimeSaverPage />} />
+        <Route path="/time-saver/:id" element={<TimeSaverDetailPage />} />
                   
                   {/* Authentication */}
                   <Route path="/login" element={<LoginPage />} />
