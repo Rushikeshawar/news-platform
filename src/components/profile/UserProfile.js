@@ -139,7 +139,7 @@ const UserProfile = ({ user }) => {
             </p>
           </div>
         </div>
-        <div className="form-section">
+        {/* <div className="form-section">
           <h3>Preferences</h3>
           <div className="form-group">
             <label htmlFor="theme">Theme</label>
@@ -203,7 +203,7 @@ const UserProfile = ({ user }) => {
               Auto-save Reading Progress
             </label>
           </div>
-        </div>
+        </div> */}
         {isEditing && (
           <div className="form-actions">
             <button type="submit" className="save-btn" disabled={isLoading}>
