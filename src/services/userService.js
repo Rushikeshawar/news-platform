@@ -1,3 +1,4 @@
+// src/services/userService.js
 import api from './api';
 
 export const userService = {
@@ -5,7 +6,7 @@ export const userService = {
   getUserProfile: async () => {
     try {
       const response = await api.get('/users/profile');
-      return response.data.data.user; // Backend returns { success: true, data: { user } }
+      return response.data.data.user;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       throw new Error('Failed to fetch user profile');
@@ -27,7 +28,7 @@ export const userService = {
   getReadingHistory: async (params = {}) => {
     try {
       const response = await api.get('/users/reading-history', { params });
-      return response.data.data; // Backend returns { success: true, data: { readingHistory, pagination } }
+      return response.data.data;
     } catch (error) {
       console.error('Error fetching reading history:', error);
       throw new Error('Failed to fetch reading history');
@@ -49,7 +50,7 @@ export const userService = {
   getUserDashboard: async (params = {}) => {
     try {
       const response = await api.get('/users/dashboard', { params });
-      return response.data.data.dashboard; // Backend returns { success: true, data: { dashboard } }
+      return response.data.data.dashboard;
     } catch (error) {
       console.error('Error fetching dashboard:', error);
       throw new Error('Failed to fetch dashboard data');
@@ -60,43 +61,49 @@ export const userService = {
   getFavorites: async (params = {}) => {
     try {
       const response = await api.get('/favorites', { params });
-      return response.data.data; // Backend returns { success: true, data: { articles, pagination } }
+      return response.data.data;
     } catch (error) {
       console.error('Error fetching favorites:', error);
       throw new Error('Failed to fetch favorites');
     }
   },
 
-  // Add to favorites
+  // Add to favorites - CORRECTED: articleId as URL parameter
   addToFavorites: async (articleId) => {
     try {
       const response = await api.post(`/favorites/${articleId}`);
       return response.data;
     } catch (error) {
       console.error('Error adding to favorites:', error);
-      throw new Error('Failed to add to favorites');
+      // Preserve the original error for better debugging
+      throw error;
     }
   },
 
-  // Remove from favorites
+  // Remove from favorites - CORRECT
   removeFromFavorites: async (articleId) => {
     try {
       const response = await api.delete(`/favorites/${articleId}`);
       return response.data;
     } catch (error) {
       console.error('Error removing from favorites:', error);
-      throw new Error('Failed to remove from favorites');
+      throw error;
     }
   },
 
-  // Check favorite status
+  // Check favorite status - CORRECT
   checkFavoriteStatus: async (articleId) => {
     try {
       const response = await api.get(`/favorites/${articleId}/status`);
-      return response.data.data; // Backend returns { success: true, data: { isFavorite, savedAt } }
+      // Handle both response structures
+      return response.data?.data || response.data;
     } catch (error) {
+      // If 404, article is not favorited
+      if (error.response?.status === 404) {
+        return { isFavorite: false };
+      }
       console.error('Error checking favorite status:', error);
-      throw new Error('Failed to check favorite status');
+      throw error;
     }
   },
 
@@ -104,7 +111,7 @@ export const userService = {
   getFavoritesStats: async () => {
     try {
       const response = await api.get('/favorites/stats');
-      return response.data.data.stats; // Backend returns { success: true, data: { stats } }
+      return response.data.data.stats;
     } catch (error) {
       console.error('Error fetching favorites stats:', error);
       throw new Error('Failed to fetch favorites stats');
@@ -148,7 +155,7 @@ export const userService = {
   getNotifications: async (params = {}) => {
     try {
       const response = await api.get('/notifications', { params });
-      return response.data.data; // Backend returns { success: true, data: { notifications, unreadCount, pagination } }
+      return response.data.data;
     } catch (error) {
       console.error('Error fetching notifications:', error);
       throw new Error('Failed to fetch notifications');
@@ -181,7 +188,7 @@ export const userService = {
   getUnreadNotificationsCount: async () => {
     try {
       const response = await api.get('/notifications/unread-count');
-      return response.data.data.unreadCount; // Backend returns { success: true, data: { unreadCount } }
+      return response.data.data.unreadCount;
     } catch (error) {
       console.error('Error fetching unread notifications count:', error);
       throw new Error('Failed to fetch unread notifications count');

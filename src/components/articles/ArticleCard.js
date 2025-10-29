@@ -9,21 +9,33 @@ import '../../styles/components/ArticleCard.css';
 const ArticleCard = ({ article, onFavoriteChange }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [isLoadingFavorite, setIsLoadingFavorite] = useState(true);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isAuthenticated && article?.id) {
       checkFavoriteStatus();
+    } else {
+      setIsLoadingFavorite(false);
+      setIsFavorite(false);
     }
   }, [article?.id, isAuthenticated]);
 
   const checkFavoriteStatus = async () => {
     try {
+      setIsLoadingFavorite(true);
       const response = await userService.checkFavoriteStatus(article.id);
-      setIsFavorite(response.data.isFavorite);
+      
+      // Handle different response structures
+      const favoriteStatus = response?.isFavorite || response?.data?.isFavorite || false;
+      setIsFavorite(favoriteStatus);
     } catch (error) {
       console.error('Error checking favorite status:', error);
+      // Don't throw error, just set to false
+      setIsFavorite(false);
+    } finally {
+      setIsLoadingFavorite(false);
     }
   };
 
@@ -36,23 +48,34 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
       return;
     }
 
+    if (isTogglingFavorite) return; // Prevent multiple clicks
+
     setIsTogglingFavorite(true);
+    const previousState = isFavorite;
+    
+    // Optimistic update
+    setIsFavorite(!isFavorite);
+
     try {
-      if (isFavorite) {
+      if (previousState) {
         await userService.removeFromFavorites(article.id);
-        setIsFavorite(false);
       } else {
         await userService.addToFavorites(article.id);
-        setIsFavorite(true);
       }
       
       // Notify parent component if callback provided
       if (onFavoriteChange) {
-        onFavoriteChange(article.id, !isFavorite);
+        onFavoriteChange(article.id, !previousState);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      alert('Failed to update favorites. Please try again.');
+      
+      // Revert optimistic update on error
+      setIsFavorite(previousState);
+      
+      // Show user-friendly error message
+      const errorMessage = error.response?.data?.message || 'Failed to update favorites. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsTogglingFavorite(false);
     }
@@ -123,9 +146,9 @@ const ArticleCard = ({ article, onFavoriteChange }) => {
           {/* Favorite Button Overlay */}
           {isAuthenticated && (
             <button
-              className={`favorite-btn ${isFavorite ? 'active' : ''}`}
+              className={`favorite-btn ${isFavorite ? 'active' : ''} ${isTogglingFavorite ? 'loading' : ''}`}
               onClick={handleToggleFavorite}
-              disabled={isTogglingFavorite}
+              disabled={isTogglingFavorite || isLoadingFavorite}
               title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <Heart 

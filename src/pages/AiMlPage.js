@@ -172,7 +172,6 @@ const AiMlPage = () => {
             </div>
 
             {/* Popular Topics */}
-              {/* Popular Topics */}
             {popularTopics.length > 0 && (
               <div className="sidebar-section">
                 <h3 className="sidebar-title">
@@ -194,6 +193,7 @@ const AiMlPage = () => {
                 </div>
               </div>
             )}
+
             {/* Trending Articles */}
             {trendingArticles.length > 0 && (
               <div className="sidebar-section">

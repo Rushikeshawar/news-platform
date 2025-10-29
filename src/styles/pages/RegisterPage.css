@@ -525,3 +525,60 @@
     border-width: 2px;
   }
 }
+/* ========================================
+   OTP ACTIONS: Resend OTP & Change Email
+   ======================================== */
+
+.otp-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  gap: 1rem;
+}
+
+.link-btn {
+  background: transparent;
+  border: none;
+  color: #3182ce;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.link-btn:hover {
+  color: #2563eb;
+  background: rgba(49, 130, 206, 0.08);
+  transform: translateY(-1px);
+}
+
+.link-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* When one button (like Resend OTP) is disabled, show subtle difference */
+.link-btn:disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
+/* Mobile-friendly layout */
+@media (max-width: 480px) {
+  .otp-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .link-btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
