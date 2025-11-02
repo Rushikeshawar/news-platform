@@ -1,10 +1,16 @@
- 
+// src/services/timeSaverService.js - FIXED VERSION
 import api from './api';
 
 export const timeSaverService = {
   // Get time saver content with enhanced filtering
   getContent: async (params = {}) => {
     const response = await api.get('/time-saver/content', { params });
+    return response.data;
+  },
+
+  // ✅ NEW: Get single time saver content by ID
+  getContentById: async (id) => {
+    const response = await api.get(`/time-saver/content/${id}`);
     return response.data;
   },
 

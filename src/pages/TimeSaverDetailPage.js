@@ -1,3 +1,4 @@
+// src/pages/TimeSaverDetailPage.js - FIXED VERSION
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -10,6 +11,7 @@ const TimeSaverDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [relatedContent, setRelatedContent] = useState([]);
+  const [fetchingArticle, setFetchingArticle] = useState(false);
 
   useEffect(() => {
     fetchContentDetail();
@@ -27,10 +29,9 @@ const TimeSaverDetailPage = () => {
       setLoading(true);
       const response = await axios.get(`/api/time-saver/content/${id}`);
       
-      console.log('API Response:', response.data); // Debug log
+      console.log('API Response:', response.data);
       
       if (response.data.success) {
-        // ✅ FIXED: Access data directly, not data.content
         setContent(response.data.data);
       }
     } catch (err) {
@@ -59,7 +60,6 @@ const TimeSaverDetailPage = () => {
       });
       
       if (response.data.success) {
-        // ✅ FIXED: Access data directly and filter out current content
         const allContent = response.data.data || [];
         const filtered = allContent.filter(item => item.id !== id);
         setRelatedContent(filtered.slice(0, 5));
@@ -86,11 +86,32 @@ const TimeSaverDetailPage = () => {
     }
   };
 
-  const handleArticleClick = (articleId, type) => {
+  // ✅ FIXED: Handle article click with proper AI article navigation
+  const handleArticleClick = async (articleId, type) => {
     handleInteraction('click');
+    
     if (type === 'ai') {
-      navigate(`/ai-articles/${articleId}`);
+      // ✅ For AI articles, fetch the article first then navigate with state
+      setFetchingArticle(true);
+      try {
+        const response = await axios.get(`/api/ai-ml/news/${articleId}`);
+        if (response.data.success && response.data.data.article) {
+          // Navigate to AI article detail page with the article data
+          navigate(`/ai-ml/${articleId}`, { 
+            state: { article: response.data.data.article }
+          });
+        } else {
+          console.error('AI article not found');
+          alert('AI article not found');
+        }
+      } catch (err) {
+        console.error('Error fetching AI article:', err);
+        alert('Failed to load AI article');
+      } finally {
+        setFetchingArticle(false);
+      }
     } else {
+      // Regular articles work normally
       navigate(`/articles/${articleId}`);
     }
   };
@@ -169,18 +190,26 @@ const TimeSaverDetailPage = () => {
 
   return (
     <div className="timesaver-page">
+      {/* Loading overlay when fetching AI article */}
+      {fetchingArticle && (
+        <div className="page-loading" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="page-spinner"></div>
+          <p className="page-loading-text">Loading AI article...</p>
+        </div>
+      )}
+
       {/* Header Navigation */}
-      <div className="page-header">
-        <div className="page-header-content">
+      <header className="detail-page-header">
+        <div className="detail-header-wrapper">
           <button
             onClick={() => navigate('/time-saver')}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            className="detail-back-button"
           >
-            <span className="mr-2">←</span>
-            Back to TimeSaver
+            <span className="back-arrow">←</span>
+            <span className="back-text">Back to TimeSaver</span>
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Main Layout with Sidebar and Content */}
       <div className="timesaver-layout">
@@ -253,47 +282,47 @@ const TimeSaverDetailPage = () => {
               <p className="card-summary">{content.summary}</p>
 
               {/* Key Points */}
-{content.keyPoints && (
-  <div className="key-points">
-    <h3 className="key-points-title">📌 Key Points</h3>
-    <ul className="key-points-list">
-      {(typeof content.keyPoints === 'string' 
-        ? content.keyPoints.split('|').filter(p => p.trim()) 
-        : content.keyPoints
-      ).map((point, index) => (
-        <li key={index}>{point.trim()}</li>
-      ))}
-    </ul>
-  </div>
-)}
+              {content.keyPoints && (
+                <div className="key-points">
+                  <h3 className="key-points-title">📌 Key Points</h3>
+                  <ul className="key-points-list">
+                    {(typeof content.keyPoints === 'string' 
+                      ? content.keyPoints.split('|').filter(p => p.trim()) 
+                      : content.keyPoints
+                    ).map((point, index) => (
+                      <li key={index}>{point.trim()}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="card-actions">
                 {content.sourceUrl && (
                   <button onClick={handleSourceClick} className="share-btn">
-                    <span className="mr-2">🔗</span>
+                    <span className="btn-icon">🔗</span>
                     View Original Source
                   </button>
                 )}
                 <button onClick={handleShare} className="share-btn">
-                  <span className="mr-2">📤</span>
+                  <span className="btn-icon">📤</span>
                   Share
                 </button>
               </div>
 
               {/* Linked Articles Section */}
               {(content.linkedArticle || content.linkedAiArticle) && (
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                <div className="linked-articles-section">
+                  <h3 className="section-title">
                     📰 Related Full Articles
                   </h3>
 
                   {/* Regular Article */}
                   {content.linkedArticle && (
-                    <div className="content-card mb-4">
+                    <div className="content-card linked-article-card">
                       <div className="card-content">
                         <div className="card-meta">
-                          <span className="card-category bg-blue-600 text-white">NEWS ARTICLE</span>
+                          <span className="card-category category-news">NEWS ARTICLE</span>
                           <span className="card-read-time">
                             {formatDate(content.linkedArticle.publishedAt)}
                           </span>
@@ -303,15 +332,15 @@ const TimeSaverDetailPage = () => {
                           <p className="card-summary">{content.linkedArticle.briefContent}</p>
                         )}
                         {content.linkedArticle.author && (
-                          <div className="flex items-center mb-3">
+                          <div className="author-info">
                             {content.linkedArticle.author.avatar && (
                               <img
                                 src={content.linkedArticle.author.avatar}
                                 alt={content.linkedArticle.author.fullName}
-                                className="w-8 h-8 rounded-full mr-2"
+                                className="author-avatar"
                               />
                             )}
-                            <span className="text-sm text-gray-600">
+                            <span className="author-name">
                               By {content.linkedArticle.author.fullName}
                             </span>
                           </div>
@@ -319,6 +348,7 @@ const TimeSaverDetailPage = () => {
                         <button
                           onClick={() => handleArticleClick(content.linkedArticle.id, 'news')}
                           className="share-btn"
+                          disabled={fetchingArticle}
                         >
                           Read Full Article →
                         </button>
@@ -328,10 +358,10 @@ const TimeSaverDetailPage = () => {
 
                   {/* AI Article */}
                   {content.linkedAiArticle && (
-                    <div className="content-card">
+                    <div className="content-card linked-article-card">
                       <div className="card-content">
                         <div className="card-meta">
-                          <span className="card-category bg-purple-600 text-white">🤖 AI ARTICLE</span>
+                          <span className="card-category category-ai">🤖 AI ARTICLE</span>
                           <span className="card-read-time">
                             {formatDate(content.linkedAiArticle.publishedAt)}
                           </span>
@@ -354,8 +384,9 @@ const TimeSaverDetailPage = () => {
                         <button
                           onClick={() => handleArticleClick(content.linkedAiArticle.id, 'ai')}
                           className="share-btn"
+                          disabled={fetchingArticle}
                         >
-                          Read Full AI Article →
+                          {fetchingArticle ? 'Loading...' : 'Read Full AI Article →'}
                         </button>
                       </div>
                     </div>
@@ -365,10 +396,10 @@ const TimeSaverDetailPage = () => {
 
               {/* Creator Info */}
               {content.creator && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">
+                <div className="creator-section">
+                  <p className="creator-text">
                     Content curated by:{' '}
-                    <span className="font-medium text-gray-900">{content.creator.fullName}</span>
+                    <span className="creator-name">{content.creator.fullName}</span>
                   </p>
                 </div>
               )}
@@ -376,9 +407,9 @@ const TimeSaverDetailPage = () => {
           </article>
 
           {/* About Section */}
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">About TimeSaver</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+          <div className="about-section">
+            <h3 className="about-title">About TimeSaver</h3>
+            <p className="about-text">
               TimeSaver provides quick, digestible summaries of important news and articles. Each piece
               is carefully curated to save you time while keeping you informed. Click on linked articles
               to dive deeper into topics that interest you.

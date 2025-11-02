@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Filter, Clock, X, ChevronDown } from 'lucide-react';
 import '../styles/pages/TimeSaverPage.css';
 
 const TimeSaverPage = () => {
@@ -8,6 +9,7 @@ const TimeSaverPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({});
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [filters, setFilters] = useState({
     page: 1,
     limit: 12,
@@ -37,6 +39,17 @@ const TimeSaverPage = () => {
     fetchContent();
   }, [filters]);
 
+  // Close mobile filters when screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) {
+        setShowMobileFilters(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const fetchContent = async () => {
     try {
       setLoading(true);
@@ -57,14 +70,13 @@ const TimeSaverPage = () => {
       const response = await axios.get('/api/time-saver/content', { params });
       
       if (response.data.success) {
-        // ✅ FIXED: Access data directly, not data.content
         setContent(response.data.data || []);
         setPagination(response.data.pagination || {});
       }
     } catch (err) {
       console.error('Error fetching content:', err);
       setError(err.response?.data?.message || 'Failed to load content');
-      setContent([]); // Set empty array on error
+      setContent([]);
     } finally {
       setLoading(false);
     }
@@ -77,6 +89,11 @@ const TimeSaverPage = () => {
   const handlePageChange = (newPage) => {
     setFilters(prev => ({ ...prev, page: newPage }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
+    setShowMobileFilters(false);
   };
 
   const getCategoryColor = (category) => {
@@ -97,6 +114,11 @@ const TimeSaverPage = () => {
     if (seconds < 60) return `${seconds}s`;
     return `${Math.ceil(seconds / 60)}m`;
   };
+
+  const activeFilterCount = [
+    filters.category !== 'ALL' ? filters.category : null,
+    filters.contentGroup
+  ].filter(Boolean).length;
 
   if (loading && content.length === 0) {
     return (
@@ -124,56 +146,138 @@ const TimeSaverPage = () => {
     <div className="timesaver-page">
       {/* Header */}
       <div className="page-header">
-        <div className="page-header-content">
-          <h1 className="page-title">TimeSaver</h1>
-          <p className="page-description">Quick updates and highlights to save your time</p>
+        <div className="header-content">
+          <h1 className="page-title">
+            <Clock size={32} />
+            TimeSaver
+          </h1>
+          <p className="page-description">
+            Quick updates and highlights to save your time
+          </p>
         </div>
       </div>
 
+      {/* Mobile Filter Toggle Button */}
+      <button 
+        className="mobile-filter-toggle"
+        onClick={() => setShowMobileFilters(!showMobileFilters)}
+      >
+        <Filter size={20} />
+        <span>Filters</span>
+        {activeFilterCount > 0 && (
+          <span className="filter-count-badge">{activeFilterCount}</span>
+        )}
+        <ChevronDown 
+          size={20} 
+          className={`chevron ${showMobileFilters ? 'rotated' : ''}`}
+        />
+      </button>
+
       {/* Main Layout with Sidebar and Content */}
       <div className="timesaver-layout">
-        {/* Sidebar Filters */}
-        <aside className="timesaver-sidebar">
-          <h3 className="sidebar-title">Filters</h3>
+        {/* Sidebar Filters - with mobile dropdown */}
+        <aside className={`timesaver-sidebar ${showMobileFilters ? 'show-mobile' : ''}`}>
+          {/* Mobile Close Button */}
+          <button 
+            className="mobile-filter-close"
+            onClick={() => setShowMobileFilters(false)}
+          >
+            <X size={24} />
+          </button>
 
-          {/* Content Group Filter */}
-          <div className="filter-section">
-            <div className="filter-section-title">Filter by Content Type</div>
-            <div className="filter-options">
-              {contentGroups.map(group => (
-                <button
-                  key={group.value}
-                  onClick={() => setFilters(prev => ({ ...prev, contentGroup: group.value, page: 1 }))}
-                  className={`filter-option ${filters.contentGroup === group.value ? 'active' : ''}`}
-                >
-                  {group.label}
-                </button>
-              ))}
+          <div className="sidebar-section">
+            <h3 className="sidebar-title">
+              <Filter size={18} />
+              Filters
+            </h3>
+
+            {/* Content Group Filter */}
+            <div className="filter-section">
+              <div className="filter-section-title">Content Type</div>
+              <div className="filter-options">
+                {contentGroups.map(group => (
+                  <button
+                    key={group.value}
+                    onClick={() => handleFilterChange({ contentGroup: group.value })}
+                    className={`filter-option ${filters.contentGroup === group.value ? 'active' : ''}`}
+                  >
+                    {group.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Category Filter */}
-          <div className="filter-section">
-            <div className="filter-section-title">Filter by Category</div>
-            <div className="filter-options">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setFilters(prev => ({ ...prev, category: cat, page: 1 }))}
-                  className={`filter-option ${filters.category === cat ? 'active' : ''}`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category Filter */}
+            <div className="filter-section">
+              <div className="filter-section-title">Category</div>
+              <div className="filter-options">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => handleFilterChange({ category: cat })}
+                    className={`filter-option ${filters.category === cat ? 'active' : ''}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </aside>
 
+        {/* Mobile Filter Overlay */}
+        {showMobileFilters && (
+          <div 
+            className="mobile-filter-overlay"
+            onClick={() => setShowMobileFilters(false)}
+          />
+        )}
+
         {/* Main Content */}
         <div className="timesaver-main">
+          {/* Active Filters */}
+          {(filters.category !== 'ALL' || filters.contentGroup) && (
+            <div className="active-filters">
+              {filters.category !== 'ALL' && (
+                <span className="filter-tag">
+                  Category: {filters.category}
+                </span>
+              )}
+              {filters.contentGroup && (
+                <span className="filter-tag">
+                  Type: {contentGroups.find(g => g.value === filters.contentGroup)?.label}
+                </span>
+              )}
+              <button 
+                onClick={() => {
+                  setFilters(prev => ({ ...prev, category: 'ALL', contentGroup: '', page: 1 }));
+                  setShowMobileFilters(false);
+                }} 
+                className="clear-filters-btn"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
+          {/* Results Info */}
+          <div className="results-header">
+            <div className="results-info">
+              {loading ? (
+                <span>Loading...</span>
+              ) : (
+                <span>
+                  {pagination.totalCount || content.length} items found
+                </span>
+              )}
+            </div>
+          </div>
+
           {content.length === 0 ? (
             <div className="empty-state">
-              <p className="empty-state-text">No content found</p>
+              <Clock size={48} className="empty-state-icon" />
+              <h3>No content found</h3>
+              <p>Try adjusting your filters to see more content.</p>
             </div>
           ) : (
             <>

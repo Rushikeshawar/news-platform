@@ -6,12 +6,13 @@ import AiMlCard from '../components/ai-ml/AiMlCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Pagination from '../components/common/Pagination';
-import { Brain, Search, Filter, TrendingUp, Cpu, Zap, X } from 'lucide-react';
+import { Brain, Search, Filter, TrendingUp, Cpu, Zap, X, ChevronDown } from 'lucide-react';
 import '../styles/pages/AiMlPage.css';
 import debounce from 'lodash.debounce';
 
 const AiMlPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [filters, setFilters] = useState({
     page: parseInt(searchParams.get('page')) || 1,
     limit: 12,
@@ -77,6 +78,17 @@ const AiMlPage = () => {
     setSearchParams(params);
   }, [filters, setSearchParams]);
 
+  // Close mobile filters when screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) {
+        setShowMobileFilters(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
@@ -101,6 +113,7 @@ const AiMlPage = () => {
       q: ''
     });
     setSearchQuery('');
+    setShowMobileFilters(false);
   };
 
   const articles = aiMlData?.data?.articles || [];
@@ -108,6 +121,11 @@ const AiMlPage = () => {
   const categories = categoriesData?.data?.categories || [];
   const trendingArticles = trendingData?.data?.articles || [];
   const popularTopics = topicsData?.data?.topics || [];
+
+  const activeFilterCount = [
+    filters.category,
+    filters.q
+  ].filter(Boolean).length;
 
   if (error) {
     return (
@@ -139,13 +157,34 @@ const AiMlPage = () => {
           </div>
         </div>
 
-      
-
+        {/* Mobile Filter Toggle Button */}
+        <button 
+          className="mobile-filter-toggle"
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+        >
+          <Filter size={20} />
+          <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="filter-count-badge">{activeFilterCount}</span>
+          )}
+          <ChevronDown 
+            size={20} 
+            className={`chevron ${showMobileFilters ? 'rotated' : ''}`}
+          />
+        </button>
 
         {/* Layout */}
         <div className="aiml-layout">
-          {/* Sidebar */}
-          <aside className="aiml-sidebar">
+          {/* Sidebar - with mobile dropdown */}
+          <aside className={`aiml-sidebar ${showMobileFilters ? 'show-mobile' : ''}`}>
+            {/* Mobile Close Button */}
+            <button 
+              className="mobile-filter-close"
+              onClick={() => setShowMobileFilters(false)}
+            >
+              <X size={24} />
+            </button>
+
             {/* Categories */}
             <div className="sidebar-section">
               <h3 className="sidebar-title">
@@ -154,7 +193,10 @@ const AiMlPage = () => {
               <div className="categories-list">
                 <button
                   className={`category-btn ${!filters.category ? 'active' : ''}`}
-                  onClick={() => handleFilterChange({ category: '' })}
+                  onClick={() => {
+                    handleFilterChange({ category: '' });
+                    setShowMobileFilters(false);
+                  }}
                 >
                   All Categories
                 </button>
@@ -162,7 +204,10 @@ const AiMlPage = () => {
                   <button
                     key={category.name}
                     className={`category-btn ${filters.category === category.name ? 'active' : ''}`}
-                    onClick={() => handleFilterChange({ category: category.name })}
+                    onClick={() => {
+                      handleFilterChange({ category: category.name });
+                      setShowMobileFilters(false);
+                    }}
                   >
                     {category.name}
                     {category.isHot && <span className="hot-badge">🔥</span>}
@@ -182,7 +227,10 @@ const AiMlPage = () => {
                     <button
                       key={index}
                       className="topic-item"
-                      onClick={() => handleFilterChange({ q: topic.topic })}
+                      onClick={() => {
+                        handleFilterChange({ q: topic.topic });
+                        setShowMobileFilters(false);
+                      }}
                     >
                       <span className="topic-name">{topic.topic}</span>
                       {topic.score && (
@@ -205,7 +253,10 @@ const AiMlPage = () => {
                     <div
                       key={article.id}
                       className="trending-item"
-                      onClick={() => handleFilterChange({ q: article.headline })}
+                      onClick={() => {
+                        handleFilterChange({ q: article.headline });
+                        setShowMobileFilters(false);
+                      }}
                     >
                       <h4 className="trending-title">{article.headline}</h4>
                       <div className="trending-meta">
@@ -223,33 +274,41 @@ const AiMlPage = () => {
             )}
           </aside>
 
+          {/* Mobile Filter Overlay */}
+          {showMobileFilters && (
+            <div 
+              className="mobile-filter-overlay"
+              onClick={() => setShowMobileFilters(false)}
+            />
+          )}
+
           {/* Main Content */}
           <main className="aiml-main">
+            {/* Search Section */}
+            <div className="search-section">
+              <div className="search-container">
+                {/* <Search size={20} className="search-icon" /> */}
+                <input
+                  type="text"
+                  placeholder="Search AI/ML articles, companies, models..."
+                  value={searchQuery}
+                  onChange={handleSearchInput}
+                  className="search-input"
+                />
+                {searchQuery && (
+                  <X
+                    size={18}
+                    className="clear-search"
+                    onClick={() => {
+                      setSearchQuery('');
+                      debouncedSearch('');
+                    }}
+                  />
+                )}
+              </div>
+            </div>
 
-              {/* Search Section */}
-        {/* Search Section */}
-                <div className="search-section">
-  <div className="search-container">
-  
-    <input
-      type="text"
-      placeholder="Search AI/ML articles, companies, models..."
-      value={searchQuery}
-      onChange={handleSearchInput}
-      className="search-input"
-    />
-    {searchQuery && (
-      <X
-        size={18}
-        className="clear-search"
-        onClick={() => {
-          setSearchQuery('');
-          debouncedSearch('');
-        }}
-      />
-    )}
-  </div>
-</div>
+            {/* Active Filters */}
             {(filters.category || filters.q) && (
               <div className="active-filters">
                 {filters.category && (
@@ -264,6 +323,7 @@ const AiMlPage = () => {
               </div>
             )}
 
+            {/* Results Header */}
             <div className="results-header">
               <div className="results-info">
                 {isLoading ? (
@@ -276,22 +336,23 @@ const AiMlPage = () => {
                 )}
               </div>
               <div className="sort-controls">
-  <select
-    value={`${filters.sortBy}-${filters.order}`}
-    onChange={(e) => {
-      const [sortBy, order] = e.target.value.split('-');
-      handleFilterChange({ sortBy, order });
-    }}
-    className="sort-select"
-  >
-    <option value="publishedAt-desc">Newest First</option>
-    <option value="publishedAt-asc">Oldest First</option>
-    <option value="viewCount-desc">Most Viewed</option>
-    <option value="shareCount-desc">Most Shared</option>
-  </select>
-</div>
+                <select
+                  value={`${filters.sortBy}-${filters.order}`}
+                  onChange={(e) => {
+                    const [sortBy, order] = e.target.value.split('-');
+                    handleFilterChange({ sortBy, order });
+                  }}
+                  className="sort-select"
+                >
+                  <option value="publishedAt-desc">Newest First</option>
+                  <option value="publishedAt-asc">Oldest First</option>
+                  <option value="viewCount-desc">Most Viewed</option>
+                  <option value="shareCount-desc">Most Shared</option>
+                </select>
+              </div>
             </div>
 
+            {/* Articles Grid */}
             {isLoading ? (
               <LoadingSpinner />
             ) : articles.length > 0 ? (

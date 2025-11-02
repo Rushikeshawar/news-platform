@@ -1,6 +1,6 @@
-// src/pages/AiMlDetailPage.js - FIXED VERSION
+// src/pages/AiMlDetailPage.js - FIXED VERSION WITH STATE SUPPORT
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { 
   ArrowLeft, Calendar, Eye, Share2, Bookmark, Clock, 
@@ -15,26 +15,43 @@ import '../styles/pages/AiMlDetailPage.css';
 const AiMlDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [bookmarked, setBookmarked] = useState(false);
   const [shared, setShared] = useState(false);
 
+  // ✅ CHECK: If article was passed via navigation state (from TimeSaver)
+  const articleFromState = location.state?.article;
+  console.log('Article from state:', articleFromState ? 'YES' : 'NO');
+
   // Fetch article data with view tracking enabled
+  // ✅ Skip fetch if we already have the article from navigation state
   const { data, isLoading, error, refetch } = useQuery(
     ['aiml-article', id],
     () => aiMlService.getAiMlArticleById(id, true),
     { 
-      enabled: !!id,
+      enabled: !!id && !articleFromState, // ✅ Don't fetch if we already have it
       staleTime: 5 * 60 * 1000,
       retry: 1
     }
   );
 
-  const article = data?.data?.article;
+  // ✅ Use article from state if available, otherwise use fetched data
+  const article = articleFromState || data?.data?.article;
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
+
+  // ✅ Track view when article is available (whether from state or API)
+  useEffect(() => {
+    if (article && id) {
+      // Track view (if not already tracked)
+      aiMlService.trackAiArticleInteraction(id, 'VIEW').catch(err => {
+        console.log('View tracking error:', err);
+      });
+    }
+  }, [article, id]);
 
   // Handle share
   const handleShare = async () => {
@@ -94,7 +111,8 @@ const AiMlDetailPage = () => {
     return !isNaN(num) ? num.toFixed(1) : null;
   };
 
-  if (isLoading) {
+  // ✅ Show loading only if we're fetching and don't have article from state
+  if (isLoading && !articleFromState) {
     return (
       <div className="aiml-detail-page">
         <div className="container">
@@ -104,7 +122,7 @@ const AiMlDetailPage = () => {
     );
   }
 
-  if (error || !article) {
+  if ((error && !articleFromState) || !article) {
     return (
       <div className="aiml-detail-page">
         <div className="container">
@@ -251,6 +269,12 @@ const AiMlDetailPage = () => {
           <div className="article-content">
             {article.content ? (
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            ) : article.fullContent ? (
+              <div>
+                {article.fullContent.split('\n').map((paragraph, idx) => (
+                  <p key={idx}>{paragraph}</p>
+                ))}
+              </div>
             ) : article.briefContent ? (
               <div>
                 <p>{article.briefContent}</p>
@@ -283,13 +307,16 @@ const AiMlDetailPage = () => {
             <div className="article-tags">
               <h4 className="tags-title">Related Topics:</h4>
               <div className="tags-list">
-                {article.tags.split(',').map((tag, idx) => (
+                {(typeof article.tags === 'string' 
+                  ? article.tags.split(',') 
+                  : article.tags
+                ).map((tag, idx) => (
                   <Link
                     key={idx} 
-                    to={`/ai-ml?q=${encodeURIComponent(tag.trim())}`}
+                    to={`/ai-ml?q=${encodeURIComponent(typeof tag === 'string' ? tag.trim() : tag)}`}
                     className="tag"
                   >
-                    {tag.trim()}
+                    {typeof tag === 'string' ? tag.trim() : tag}
                   </Link>
                 ))}
               </div>

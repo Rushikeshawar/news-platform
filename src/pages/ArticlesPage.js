@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { articlesService } from '../services/articlesService';
 import ArticleCard from '../components/articles/ArticleCard';
 import SearchForm from '../components/articles/SearchForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Pagination from '../components/common/Pagination';
-import { Filter, Grid, List, TrendingUp } from 'lucide-react';
+import { Filter, Grid, List, TrendingUp, X, ChevronDown } from 'lucide-react';
 import '../styles/pages/ArticlesPage.css';
 
 const ArticlesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('grid');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [filters, setFilters] = useState({
     page: parseInt(searchParams.get('page')) || 1,
     limit: 12,
@@ -51,12 +53,35 @@ const ArticlesPage = () => {
   useEffect(() => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value && value !== '' && !(key === 'page' && value === 1) && !(key === 'limit')) {
+      if (value && value !== '' && value !== false && !(key === 'page' && value === 1) && !(key === 'limit')) {
         params.set(key, value.toString());
       }
     });
-    setSearchParams(params);
+    setSearchParams(params, { replace: true });
   }, [filters, setSearchParams]);
+
+  // Close mobile filters when screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) {
+        setShowMobileFilters(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Prevent body scroll when mobile filters are open
+  useEffect(() => {
+    if (showMobileFilters) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showMobileFilters]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(prev => ({
@@ -64,6 +89,10 @@ const ArticlesPage = () => {
       ...newFilters,
       page: 1 // Reset page when filters change
     }));
+    // Close mobile filters after selection on mobile
+    if (window.innerWidth <= 1024) {
+      setShowMobileFilters(false);
+    }
   };
 
   const handlePageChange = (page) => {
@@ -73,6 +102,10 @@ const ArticlesPage = () => {
 
   const handleSearch = (searchData) => {
     handleFilterChange(searchData);
+  };
+
+  const handleCategoryClick = (categoryName) => {
+    handleFilterChange({ category: categoryName });
   };
 
   const clearFilters = () => {
@@ -85,12 +118,24 @@ const ArticlesPage = () => {
       search: '',
       featured: false
     });
+    setShowMobileFilters(false);
+  };
+
+  const handleTrendingClick = (articleId) => {
+    setShowMobileFilters(false);
+    navigate(`/articles/${articleId}`);
   };
 
   const articles = articlesData?.data?.articles || [];
   const pagination = articlesData?.data?.pagination || {};
   const categories = categoriesData?.data?.categories || [];
   const trendingArticles = trendingData?.data?.articles || [];
+
+  const activeFilterCount = [
+    filters.category,
+    filters.search,
+    filters.featured
+  ].filter(Boolean).length;
 
   if (error) {
     return (
@@ -134,9 +179,44 @@ const ArticlesPage = () => {
           </div>
         </div>
 
+        {/* Mobile Filter Toggle Button */}
+        <button 
+          className="mobile-filter-toggle"
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          aria-label="Toggle filters"
+        >
+          <Filter size={20} />
+          <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="filter-count-badge">{activeFilterCount}</span>
+          )}
+          <ChevronDown 
+            size={20} 
+            className={`chevron ${showMobileFilters ? 'rotated' : ''}`}
+          />
+        </button>
+
         <div className="articles-layout">
-          {/* Sidebar */}
-          <aside className="articles-sidebar">
+          {/* Mobile Filter Overlay */}
+          {showMobileFilters && (
+            <div 
+              className="mobile-filter-overlay"
+              onClick={() => setShowMobileFilters(false)}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Sidebar - with mobile dropdown */}
+          <aside className={`articles-sidebar ${showMobileFilters ? 'show-mobile' : ''}`}>
+            {/* Mobile Close Button */}
+            <button 
+              className="mobile-filter-close"
+              onClick={() => setShowMobileFilters(false)}
+              aria-label="Close filters"
+            >
+              <X size={24} />
+            </button>
+
             {/* Search Form */}
             <div className="sidebar-section">
               <SearchForm 
@@ -153,17 +233,59 @@ const ArticlesPage = () => {
                 <div className="active-filters">
                   {filters.category && (
                     <span className="filter-tag">
-                      Category: {filters.category}
+                      <span>Category: {filters.category}</span>
+                      <button 
+                        onClick={() => handleFilterChange({ category: '' })}
+                        aria-label="Remove category filter"
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: 'white', 
+                          cursor: 'pointer',
+                          padding: '0',
+                          marginLeft: '4px'
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
                     </span>
                   )}
                   {filters.search && (
                     <span className="filter-tag">
-                      Search: "{filters.search}"
+                      <span>Search: "{filters.search}"</span>
+                      <button 
+                        onClick={() => handleFilterChange({ search: '' })}
+                        aria-label="Remove search filter"
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: 'white', 
+                          cursor: 'pointer',
+                          padding: '0',
+                          marginLeft: '4px'
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
                     </span>
                   )}
                   {filters.featured && (
                     <span className="filter-tag">
-                      Featured Only
+                      <span>Featured Only</span>
+                      <button 
+                        onClick={() => handleFilterChange({ featured: false })}
+                        aria-label="Remove featured filter"
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: 'white', 
+                          cursor: 'pointer',
+                          padding: '0',
+                          marginLeft: '4px'
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
                     </span>
                   )}
                   <button onClick={clearFilters} className="clear-filters-btn">
@@ -182,17 +304,20 @@ const ArticlesPage = () => {
               <div className="categories-list">
                 <button
                   className={`category-btn ${!filters.category ? 'active' : ''}`}
-                  onClick={() => handleFilterChange({ category: '' })}
+                  onClick={() => handleCategoryClick('')}
                 >
                   All Categories
+                  <span className="article-count">
+                    ({categories.reduce((sum, cat) => sum + cat.articleCount, 0)})
+                  </span>
                 </button>
                 {categories.map((category) => (
                   <button
                     key={category.name}
                     className={`category-btn ${filters.category === category.name ? 'active' : ''}`}
-                    onClick={() => handleFilterChange({ category: category.name })}
+                    onClick={() => handleCategoryClick(category.name)}
                   >
-                    {category.name}
+                    <span>{category.name}</span>
                     <span className="article-count">({category.articleCount})</span>
                   </button>
                 ))}
@@ -208,17 +333,24 @@ const ArticlesPage = () => {
                 </h3>
                 <div className="trending-list">
                   {trendingArticles.map((article) => (
-                    <Link 
+                    <div
                       key={article.id} 
-                      to={`/articles/${article.id}`}
                       className="trending-item"
+                      onClick={() => handleTrendingClick(article.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleTrendingClick(article.id);
+                        }
+                      }}
                     >
                       <h4 className="trending-title">{article.title}</h4>
                       <div className="trending-meta">
                         <span className="view-count">{article.viewCount} views</span>
                         <span className="category">{article.category}</span>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -234,7 +366,8 @@ const ArticlesPage = () => {
                   <span>Loading...</span>
                 ) : (
                   <span>
-                    {pagination.totalCount || 0} articles found
+                    <strong>{pagination.totalCount || 0}</strong> articles found
+                    {filters.category && ` in ${filters.category}`}
                     {filters.search && ` for "${filters.search}"`}
                   </span>
                 )}
@@ -247,12 +380,12 @@ const ArticlesPage = () => {
                     handleFilterChange({ sortBy, order });
                   }}
                   className="sort-select"
+                  aria-label="Sort articles"
                 >
                   <option value="publishedAt-desc">Newest First</option>
                   <option value="publishedAt-asc">Oldest First</option>
                   <option value="viewCount-desc">Most Viewed</option>
                   <option value="shareCount-desc">Most Shared</option>
-                  {/* <option value="title-asc">Title A-Z</option> */}
                 </select>
               </div>
             </div>
@@ -286,10 +419,16 @@ const ArticlesPage = () => {
             ) : (
               <div className="no-results">
                 <h3>No articles found</h3>
-                <p>Try adjusting your search criteria or browse different categories.</p>
-                <button onClick={clearFilters} className="clear-filters-btn">
-                  Clear Filters
-                </button>
+                <p>
+                  {filters.category || filters.search || filters.featured
+                    ? 'Try adjusting your search criteria or browse different categories.'
+                    : 'No articles available at the moment.'}
+                </p>
+                {(filters.category || filters.search || filters.featured) && (
+                  <button onClick={clearFilters} className="clear-filters-btn">
+                    Clear All Filters
+                  </button>
+                )}
               </div>
             )}
           </main>
